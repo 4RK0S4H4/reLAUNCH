@@ -27,6 +27,12 @@ jobs:
       - name: Smoke test (service + agent on the runner)
         shell: pwsh
         run: ./scripts/smoke-test.ps1 -Root artifacts/publish
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Relay end-to-end (local Worker + service + fake phone)
+        shell: pwsh
+        run: ./scripts/relay-e2e.ps1 -Root artifacts/publish
       - name: Zip
         shell: pwsh
         run: Compress-Archive -Path artifacts/publish/* -DestinationPath artifacts/reLAUNCH-win-x64.zip

@@ -72,6 +72,7 @@ public sealed class CatalogueService(AgentClient agent, AgentSupervisor supervis
 
     private async Task FetchMissingIconsAsync(CancellationToken ct)
     {
+        var fetched = 0;
         foreach (var app in _apps)
         {
             if (ct.IsCancellationRequested) return;
@@ -84,6 +85,7 @@ public sealed class CatalogueService(AgentClient agent, AgentSupervisor supervis
                     var bytes = Convert.FromBase64String(b64);
                     await File.WriteAllBytesAsync(IconPath(app.Id), bytes, ct);
                     SetHash(app.Id, bytes);
+                    fetched++;
                 }
             }
             catch (RpcException ex)
@@ -91,6 +93,7 @@ public sealed class CatalogueService(AgentClient agent, AgentSupervisor supervis
                 log.LogDebug("No icon for {App}: {Message}", app.Name, ex.Message);
             }
         }
+        if (fetched > 0) events.Publish(new { type = "catalogue", count = _apps.Count });
     }
 
     private void LoadIconHashes()

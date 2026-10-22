@@ -35,6 +35,8 @@ public sealed class ControlService(
             runner.PhaseOf(a.Id).ToString().ToLowerInvariant())).ToList();
     }
 
+    public List<string> GetFavoriteIds() => db.GetFavorites();
+
     public byte[]? GetIcon(string id) => catalogue.ReadIcon(id);
 
     public async Task<ActionResultDto> ActAsync(string appId, ActionKind kind, string deviceId, CancellationToken ct)

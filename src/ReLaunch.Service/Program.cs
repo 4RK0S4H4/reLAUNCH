@@ -42,6 +42,9 @@ internal static class ServiceRegistration
         s.AddSingleton<CatalogueService>();
         s.AddHostedService(sp => sp.GetRequiredService<CatalogueService>());
         s.AddHostedService<StatusPublisher>();
+        s.AddSingleton<RelayClient>();
+        s.AddHostedService(sp => sp.GetRequiredService<RelayClient>());
+        s.AddSingleton<PairingService>();
         return s;
     }
 }

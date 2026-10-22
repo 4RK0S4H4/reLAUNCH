@@ -7,7 +7,7 @@ namespace ReLaunch.Service;
 
 public sealed record ActivityRow(DateTimeOffset Time, string DeviceId, string AppId, string Action, string Result);
 
-/// <summary>SQLite store in %ProgramData%\reLAUNCH: favorites, overrides, devices and the activity log.</summary>
+/// <summary>SQLite store in %ProgramData%\reLAUNCH: favorites, overrides and the activity log (phone devices live in the relay).</summary>
 public sealed class Database
 {
     private readonly string _connectionString;
@@ -19,7 +19,6 @@ public sealed class Database
         Exec(c, """
             CREATE TABLE IF NOT EXISTS favorites (appId TEXT PRIMARY KEY, position INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS overrides (appId TEXT PRIMARY KEY, args TEXT, extraProcesses TEXT NOT NULL DEFAULT '[]', closeTimeoutMs INTEGER);
-            CREATE TABLE IF NOT EXISTS devices (id TEXT PRIMARY KEY, name TEXT NOT NULL, tokenHash TEXT NOT NULL, createdAt INTEGER NOT NULL, lastSeen INTEGER);
             CREATE TABLE IF NOT EXISTS activity (id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, deviceId TEXT NOT NULL, appId TEXT NOT NULL, action TEXT NOT NULL, result TEXT NOT NULL);
             """);
     }

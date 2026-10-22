@@ -48,6 +48,49 @@ public static class DebugApi
             return Results.Accepted();
         });
 
+        app.MapGet("/api/relay", (RelayClient r) =>
+        {
+            var settings = ServiceSettings.Load();
+            return new
+            {
+                state = r.State.ToString().ToLowerInvariant(),
+                lastHeartbeat = r.LastHeartbeat,
+                lastError = r.LastError,
+                url = RelayConfig.Resolve()?.HttpBase ?? settings.RelayUrl,
+                hasKey = RelayConfig.Resolve() is not null || !string.IsNullOrEmpty(settings.PcKeyProtected),
+            };
+        });
+
+        app.MapPut("/api/relay", (RelayClient r, RelayBody body) =>
+        {
+            var settings = ServiceSettings.Load();
+            if (body.Url is not null) settings.RelayUrl = body.Url.Trim();
+            if (!string.IsNullOrWhiteSpace(body.Key)) settings.PcKeyProtected = PcKeyStore.Protect(body.Key.Trim());
+            settings.Save();
+            r.Reconfigure();
+            return Results.NoContent();
+        });
+
+        app.MapPost("/api/relay/key", (RelayClient r) =>
+        {
+            var key = PcKeyStore.Generate();
+            var settings = ServiceSettings.Load();
+            settings.PcKeyProtected = PcKeyStore.Protect(key);
+            settings.Save();
+            r.Reconfigure();
+            return new { key };
+        });
+
+        app.MapPost("/api/pairing", async (PairingService p, CancellationToken ct) => await p.CreateAsync(ct));
+
+        app.MapGet("/api/devices", async (PairingService p, CancellationToken ct) => await p.ListDevicesAsync(ct));
+
+        app.MapDelete("/api/devices/{id}", async (PairingService p, string id, CancellationToken ct) =>
+        {
+            await p.RevokeAsync(id, ct);
+            return Results.NoContent();
+        });
+
         app.MapGet("/api/events", async (HttpContext ctx, EventHub hub) =>
         {
             ctx.Response.ContentType = "text/event-stream";
@@ -65,6 +108,8 @@ public static class DebugApi
             catch (OperationCanceledException) { }
         });
     }
+
+    public sealed record RelayBody(string? Url, string? Key);
 
     public sealed record OverrideBody(string? Args, string[]? ExtraProcesses, int? CloseTimeoutMs);
 }
