@@ -66,4 +66,4 @@ finally {
         if (Test-Path "$data/$f") { Get-Content "$data/$f" -Tail 60 }
     }
 }
-if ($failed) { exit 1 }
+exit $(if ($failed) { 1 } else { 0 })
