@@ -12,9 +12,9 @@ $debug = "http://127.0.0.1:5480"
 $pcKey = "e2e-test-key-" + [guid]::NewGuid().ToString("N")
 
 function Json($url, $method = "GET", $headers = @{}, $body = $null) {
-    $args = @{ Uri = $url; Method = $method; Headers = $headers; UseBasicParsing = $true; SkipHttpErrorCheck = $true }
-    if ($null -ne $body) { $args.Body = ($body | ConvertTo-Json -Compress); $args.ContentType = "application/json" }
-    $r = Invoke-WebRequest @args
+    $req = @{ Uri = $url; Method = $method; Headers = $headers; UseBasicParsing = $true; SkipHttpErrorCheck = $true }
+    if ($null -ne $body) { $req.Body = ($body | ConvertTo-Json -Compress); $req.ContentType = "application/json" }
+    $r = Invoke-WebRequest @req
     $parsed = $null
     if ($r.Content) { try { $parsed = $r.Content | ConvertFrom-Json } catch { } }
     [pscustomobject]@{ Status = [int]$r.StatusCode; Body = $parsed; Raw = $r.Content }
