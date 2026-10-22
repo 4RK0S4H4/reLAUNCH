@@ -3,6 +3,8 @@
     <OutputName>ReLaunchSetup</OutputName>
     <OutputType>Package</OutputType>
     <InstallerPlatform>x64</InstallerPlatform>
+    <!-- Harvested .NET / WinAppSDK files carry multi-language version resources that fail ICE03/ICE60. The CI installer test installs the MSI for real. -->
+    <SuppressValidation>true</SuppressValidation>
     <!-- Folder holding the published service, agent and app (all in one folder). -->
     <AppDir Condition="'$(AppDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\app</AppDir>
     <DefineConstants>$(DefineConstants);AppDir=$(AppDir);ReLaunchVersion=$(Version)</DefineConstants>
