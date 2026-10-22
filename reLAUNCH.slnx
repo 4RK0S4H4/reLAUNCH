@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReLaunch.Core/ReLaunch.Core.csproj" />
+    <Project Path="src/ReLaunch.Service/ReLaunch.Service.csproj" />
+    <Project Path="src/ReLaunch.Agent/ReLaunch.Agent.csproj" />
+    <Project Path="src/ReLaunch.App/ReLaunch.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ReLaunch.Core.Tests/ReLaunch.Core.Tests.csproj" />
+  </Folder>
+</Solution>

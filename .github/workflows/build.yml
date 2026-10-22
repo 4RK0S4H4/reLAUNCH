@@ -1,0 +1,49 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore reLAUNCH.slnx
+      - name: Build
+        run: dotnet build reLAUNCH.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test reLAUNCH.slnx -c Release --no-build
+      - name: Publish service
+        run: dotnet publish src/ReLaunch.Service -c Release -r win-x64 --self-contained -o artifacts/publish/service
+      - name: Publish agent
+        run: dotnet publish src/ReLaunch.Agent -c Release -r win-x64 --self-contained -o artifacts/publish/agent
+      - name: Publish app
+        run: dotnet publish src/ReLaunch.App -c Release -r win-x64 --self-contained -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/publish/app
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path artifacts/publish/* -DestinationPath artifacts/reLAUNCH-win-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reLAUNCH-win-x64
+          path: artifacts/reLAUNCH-win-x64.zip
+
+  relay:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: relay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: relay/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
