@@ -43,7 +43,7 @@ $failed = $false
 try {
     WaitFor "relay is up" { (Json "$relay/api/health").Status -eq 200 } 120
 
-    $svc = Start-Process "$Root/service/ReLaunch.Service.exe" -PassThru `
+    $svc = Start-Process "$Root/ReLaunch.Service.exe" -PassThru `
         -RedirectStandardOutput "$data/service.out.log" -RedirectStandardError "$data/service.err.log"
     WaitFor "service API is up" { (Json "$debug/api/status").Status -eq 200 } 60
     WaitFor "service connected to the relay" { (Json "$debug/api/relay").Body.state -eq "connected" } 60

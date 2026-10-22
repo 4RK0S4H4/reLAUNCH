@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Force $data | Out-Null
 $env:RELAUNCH_DATA = $data
 $env:RELAUNCH_DEBUG_API = "1"
 
-$svc = Start-Process "$Root/service/ReLaunch.Service.exe" -PassThru `
+$svc = Start-Process "$Root/ReLaunch.Service.exe" -PassThru `
     -RedirectStandardOutput "$data/service.out.log" -RedirectStandardError "$data/service.err.log"
 $base = "http://127.0.0.1:5480"
 $failed = $false
@@ -46,8 +46,8 @@ try {
     Write-Host "Activity: $(Invoke-RestMethod "$base/api/activity" | ConvertTo-Json -Compress)"
 
     # The desktop app opens every page against the running service (catches XAML and startup crashes).
-    $appExe = "$Root/app/ReLaunch.App.exe"
-    $selftestLog = "$Root/app/selftest.log"
+    $appExe = "$Root/ReLaunch.App.exe"
+    $selftestLog = "$Root/selftest.log"
     Remove-Item $selftestLog -ErrorAction SilentlyContinue
     $appProc = Start-Process $appExe -ArgumentList "--selftest" -PassThru
     if (-not $appProc.WaitForExit(120000)) { Stop-Process -Id $appProc.Id -Force; throw "desktop app self-test timed out" }

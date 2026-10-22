@@ -3,6 +3,10 @@ name: build
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   windows:
@@ -12,34 +16,46 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - name: Restore
         run: dotnet restore reLAUNCH.slnx
       - name: Build
         run: dotnet build reLAUNCH.slnx -c Release --no-restore
       - name: Test
         run: dotnet test reLAUNCH.slnx -c Release --no-build
+      # The service, agent and desktop app are published into one folder: the installer ships that folder.
       - name: Publish service
-        run: dotnet publish src/ReLaunch.Service -c Release -r win-x64 --self-contained -o artifacts/publish/service
+        run: dotnet publish src/ReLaunch.Service -c Release -r win-x64 --self-contained -o artifacts/app
       - name: Publish agent
-        run: dotnet publish src/ReLaunch.Agent -c Release -r win-x64 --self-contained -o artifacts/publish/agent
-      - name: Publish app
-        run: dotnet publish src/ReLaunch.App -c Release -r win-x64 --self-contained -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/publish/app
-      - name: Smoke test (service + agent on the runner)
+        run: dotnet publish src/ReLaunch.Agent -c Release -r win-x64 --self-contained -o artifacts/app
+      - name: Publish desktop app
+        run: dotnet publish src/ReLaunch.App -c Release -r win-x64 --self-contained -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/app
+      - name: Smoke test (service + agent + desktop app on the runner)
         shell: pwsh
-        run: ./scripts/smoke-test.ps1 -Root artifacts/publish
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
+        run: ./scripts/smoke-test.ps1 -Root artifacts/app
       - name: Relay end-to-end (local Worker + service + fake phone)
         shell: pwsh
-        run: ./scripts/relay-e2e.ps1 -Root artifacts/publish
-      - name: Zip
+        run: ./scripts/relay-e2e.ps1 -Root artifacts/app
+      - name: Build the installer (WiX)
+        run: dotnet build installer/ReLaunch.Installer.wixproj -c Release -p:AppDir="${{ github.workspace }}\artifacts\app"
+      - name: Install, check the real Windows service, uninstall
         shell: pwsh
-        run: Compress-Archive -Path artifacts/publish/* -DestinationPath artifacts/reLAUNCH-win-x64.zip
+        run: |
+          $msi = Get-ChildItem installer -Recurse -Filter ReLaunchSetup.msi | Select-Object -First 1
+          ./scripts/installer-test.ps1 -Msi $msi.FullName
+      - name: Collect release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/release | Out-Null
+          Get-ChildItem installer -Recurse -Filter ReLaunchSetup.msi | Select-Object -First 1 | Copy-Item -Destination artifacts/release
+          Remove-Item artifacts/app/selftest.log -ErrorAction SilentlyContinue
+          Compress-Archive -Path artifacts/app/* -DestinationPath artifacts/release/reLAUNCH-win-x64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: reLAUNCH-win-x64
-          path: artifacts/reLAUNCH-win-x64.zip
+          name: reLAUNCH-installer
+          path: artifacts/release/*
 
   relay:
     runs-on: ubuntu-latest
@@ -60,3 +76,20 @@ jobs:
           git diff --exit-code -- public || (echo "relay/public is out of date: run python3 relay/web/build.py and commit" && exit 1)
       - run: npm run typecheck
       - run: npm test
+      - name: Deploy to Cloudflare (skipped when the secrets are not set)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RELAUNCH_PC_KEY: ${{ secrets.RELAUNCH_PC_KEY }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set: skipping the deploy (see docs/SETUP-CLOUDFLARE.md)."
+            exit 0
+          fi
+          npx wrangler deploy
+          if [ -n "$RELAUNCH_PC_KEY" ]; then
+            printf '%s' "$RELAUNCH_PC_KEY" | npx wrangler secret put PC_KEY
+          else
+            echo "RELAUNCH_PC_KEY is not set: the relay is deployed but the PC cannot connect yet."
+          fi

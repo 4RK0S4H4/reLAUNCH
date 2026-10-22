@@ -1,0 +1,13 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputName>ReLaunchSetup</OutputName>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <!-- Folder holding the published service, agent and app (all in one folder). -->
+    <AppDir Condition="'$(AppDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\app</AppDir>
+    <DefineConstants>$(DefineConstants);AppDir=$(AppDir);ReLaunchVersion=$(Version)</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+</Project>

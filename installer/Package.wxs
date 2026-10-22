@@ -1,0 +1,48 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Package Name="reLAUNCH" Manufacturer="reLAUNCH" Version="$(ReLaunchVersion)"
+           UpgradeCode="6C1D5B0E-3B52-4E0A-9B8D-2F1F8E6A7C41" Scope="perMachine">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of reLAUNCH is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="mszip" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="reLAUNCH" />
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="reLAUNCH" Level="1">
+      <ComponentRef Id="ServiceComponent" />
+      <ComponentRef Id="AppComponent" />
+      <ComponentGroupRef Id="AppFiles" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <!-- The Windows service: automatic start, restarts itself if it crashes. -->
+    <Component Id="ServiceComponent" Directory="INSTALLFOLDER" Bitness="always64">
+      <File Id="ServiceExe" Source="$(AppDir)\ReLaunch.Service.exe" KeyPath="yes" />
+      <ServiceInstall Id="ReLaunchService" Name="reLAUNCH" DisplayName="reLAUNCH"
+                      Description="Lets your phone launch, stop and restart apps on this PC."
+                      Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem" Vital="yes">
+        <util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="restart"
+                            RestartServiceDelayInSeconds="5" ResetPeriodInDays="1" />
+      </ServiceInstall>
+      <ServiceControl Id="ReLaunchServiceControl" Name="reLAUNCH" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+    </Component>
+
+    <!-- The desktop app with its Start menu shortcut. -->
+    <Component Id="AppComponent" Directory="INSTALLFOLDER" Bitness="always64">
+      <File Id="AppExe" Source="$(AppDir)\ReLaunch.App.exe" KeyPath="yes">
+        <Shortcut Id="AppShortcut" Directory="ProgramMenuFolder" Name="reLAUNCH" WorkingDirectory="INSTALLFOLDER" Advertise="yes" />
+      </File>
+    </Component>
+
+    <!-- Everything else the three programs need (agent, runtimes, libraries). -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(AppDir)\**">
+        <Exclude Files="$(AppDir)\ReLaunch.Service.exe" />
+        <Exclude Files="$(AppDir)\ReLaunch.App.exe" />
+        <Exclude Files="$(AppDir)\*.pdb" />
+        <Exclude Files="$(AppDir)\selftest.log" />
+      </Files>
+    </ComponentGroup>
+  </Fragment>
+</Wix>
