@@ -24,6 +24,9 @@ public sealed partial class PhonesPage : Page
         Unloaded += (_, _) => _timer.Stop();
     }
 
+    /// <summary>Used by the CI self-test to show a pairing code.</summary>
+    public Task PairNowAsync() => CreatePairingAsync();
+
     private async Task OnTickAsync()
     {
         if (_expires is { } exp)

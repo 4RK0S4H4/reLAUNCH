@@ -93,6 +93,20 @@ try {
     if ($fav.Status -ne 200) { throw "favorites failed: $($fav.Raw)" }
     WaitFor "favorite shows up" { (Json "$relay/api/apps?favorites=true" "GET" $auth).Body.apps.Count -eq 1 } 30
 
+    # Desktop app screenshots (service is connected to the relay and one phone is paired).
+    $shotDir = Join-Path $data "app-shots"
+    Remove-Item "$Root/selftest.log" -ErrorAction SilentlyContinue
+    $appProc = Start-Process "$Root/ReLaunch.App.exe" -ArgumentList "--selftest", "--shots=$shotDir" -PassThru
+    if (-not $appProc.WaitForExit(150000)) { Stop-Process -Id $appProc.Id -Force; throw "desktop app self-test timed out" }
+    if (Test-Path "$Root/selftest.log") { Get-Content "$Root/selftest.log" | ForEach-Object { Write-Host "app: $_" } }
+    if ($appProc.ExitCode -ne 0) { throw "desktop app self-test failed" }
+    foreach ($png in Get-ChildItem $shotDir -Filter *.png -ErrorAction SilentlyContinue) {
+        $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($png.FullName))
+        Write-Host "SHOT-BEGIN $($png.Name) $($b64.Length)"
+        for ($i = 0; $i -lt $b64.Length; $i += 3000) { Write-Host ("SHOT: " + $b64.Substring($i, [Math]::Min(3000, $b64.Length - $i))) }
+        Write-Host "SHOT-END $($png.Name)"
+    }
+
     # Device list and revocation from the PC side.
     $devices = Json "$debug/api/devices"
     if (-not ($devices.Body | Where-Object { $_.id -eq $paired.Body.deviceId })) { throw "device missing from PC list" }

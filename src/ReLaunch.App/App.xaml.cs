@@ -17,6 +17,10 @@ public partial class App : Application
         _window = new MainWindow();
         _window.Activate();
 
-        if (commandLine.Contains("--selftest")) SelfTest.Run(this, _window);
+        if (commandLine.Contains("--selftest"))
+        {
+            var shots = commandLine.FirstOrDefault(a => a.StartsWith("--shots=", StringComparison.Ordinal))?["--shots=".Length..];
+            SelfTest.Run(this, _window, shots);
+        }
     }
 }

@@ -57,6 +57,14 @@ public sealed partial class AppsPage : Page
         SaveButton.Click += async (_, _) => await SaveOverrideAsync();
     }
 
+    /// <summary>Used by the CI self-test to show the details pane.</summary>
+    public void SelectForSelfTest(string name)
+    {
+        var app = _apps.FirstOrDefault(a => a.Name == name) ?? _apps.FirstOrDefault();
+        var item = app is null ? null : AllList.Items.OfType<ListViewItem>().FirstOrDefault(i => (string)i.Tag == app.Id);
+        if (item is not null) AllList.SelectedItem = item;
+    }
+
     private async Task SafeAsync(Func<Task> work)
     {
         try

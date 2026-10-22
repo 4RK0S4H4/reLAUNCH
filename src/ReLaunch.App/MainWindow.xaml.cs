@@ -45,6 +45,10 @@ public sealed partial class MainWindow : Window
 
     public Type? CurrentPage => ContentFrame.CurrentSourcePageType;
 
+    public object? CurrentContent => ContentFrame.Content;
+
+    public UIElement? RootElement => Content;
+
     private async Task CheckServiceAsync()
     {
         try
