@@ -26,7 +26,6 @@ jobs:
         run: dotnet publish src/ReLaunch.App -c Release -r win-x64 --self-contained -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/publish/app
       - name: Smoke test (service + agent on the runner)
         shell: pwsh
-        continue-on-error: true
         run: ./scripts/smoke-test.ps1 -Root artifacts/publish
       - name: Zip
         shell: pwsh

@@ -16,15 +16,24 @@ try {
     $apps = @()
     for ($i = 0; $i -lt 60 -and $apps.Count -eq 0; $i++) {
         Start-Sleep -Seconds 2
-        try { $apps = @(Invoke-RestMethod "$base/api/apps") } catch { }
+        try { $apps = @((Invoke-WebRequest "$base/api/apps" -UseBasicParsing).Content | ConvertFrom-Json) } catch { }
     }
     Write-Host "Status: $(Invoke-RestMethod "$base/api/status" | ConvertTo-Json -Compress)"
     Write-Host "Catalogue entries: $($apps.Count)"
+    $withIcons = 0
+    for ($i = 0; $i -lt 30 -and $withIcons -eq 0; $i++) {
+        $apps = @((Invoke-WebRequest "$base/api/apps" -UseBasicParsing).Content | ConvertFrom-Json)
+        $withIcons = @($apps | Where-Object { $_.iconHash }).Count
+        if ($withIcons -eq 0) { Start-Sleep -Seconds 2 }
+    }
+    Write-Host "Entries with icons: $withIcons"
+    if ($withIcons -eq 0) { throw "no icons were extracted" }
     $apps | Select-Object -First 15 name, trackable, iconHash | Format-Table | Out-String | Write-Host
     if ($apps.Count -eq 0) { throw "catalogue is empty" }
 
     $target = $apps | Where-Object { $_.trackable -and $_.name -match "Notepad|Calculator|Paint" } | Select-Object -First 1
     if (-not $target) { $target = $apps | Where-Object { $_.trackable } | Select-Object -First 1 }
+    if (-not $target) { throw "no trackable app to test with" }
     if ($target) {
         Write-Host "Trying $($target.name) ($($target.id))"
         $r = Invoke-RestMethod -Method Post "$base/api/apps/$($target.id)/start" -SkipHttpErrorCheck
