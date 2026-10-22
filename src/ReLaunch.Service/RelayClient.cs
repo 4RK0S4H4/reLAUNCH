@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using ReLaunch.Core;
 using ReLaunch.Core.Actions;
+using ReLaunch.Core.Contracts;
 using ReLaunch.Core.Pipes;
 
 namespace ReLaunch.Service;

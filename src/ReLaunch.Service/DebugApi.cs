@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using ReLaunch.Core;
 using ReLaunch.Core.Actions;
 using ReLaunch.Core.Catalogue;
+using ReLaunch.Core.Contracts;
 
 namespace ReLaunch.Service;
 

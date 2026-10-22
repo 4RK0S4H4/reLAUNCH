@@ -4,7 +4,7 @@ namespace ReLaunch.App;
 
 public partial class App : Application
 {
-    private Window? _window;
+    private MainWindow? _window;
 
     public App()
     {
@@ -13,7 +13,10 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var commandLine = Environment.GetCommandLineArgs();
         _window = new MainWindow();
         _window.Activate();
+
+        if (commandLine.Contains("--selftest")) SelfTest.Run(this, _window);
     }
 }

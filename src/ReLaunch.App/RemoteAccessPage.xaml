@@ -1,0 +1,44 @@
+<Page
+    x:Class="ReLaunch.App.RemoteAccessPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Padding="24" Spacing="16" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Remote Access" />
+
+            <Grid ColumnSpacing="12" Padding="20" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Ellipse x:Name="StateDot" Width="14" Height="14" Fill="Gray" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock x:Name="StateText" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Checking…" />
+                    <TextBlock x:Name="StateDetail" Opacity="0.7" TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Spacing="8">
+                <TextBox x:Name="UrlBox" Header="Relay URL" PlaceholderText="https://relaunch.your-name.workers.dev" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="SaveUrlButton" Content="Save URL" />
+                    <TextBlock x:Name="UrlMessage" VerticalAlignment="Center" Opacity="0.8" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="PC Key" />
+                <TextBlock TextWrapping="Wrap" Opacity="0.8" Text="The key that lets this PC connect to your relay. Add it to the relay as the secret PC_KEY (the GitHub secret RELAUNCH_PC_KEY does this for you)." />
+                <TextBox x:Name="KeyBox" IsReadOnly="True" FontFamily="Consolas" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="GenerateButton" Content="Generate Key" />
+                    <Button x:Name="CopyButton" Content="Copy" />
+                    <Button x:Name="ShowButton" Content="Show" />
+                    <TextBlock x:Name="KeyMessage" VerticalAlignment="Center" Opacity="0.8" />
+                </StackPanel>
+            </StackPanel>
+
+            <HyperlinkButton Content="Setup guide: Cloudflare relay" NavigateUri="https://github.com/4RK0S4H4/reLAUNCH/blob/main/docs/SETUP-CLOUDFLARE.md" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

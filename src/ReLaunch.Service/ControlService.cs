@@ -1,13 +1,10 @@
 using ReLaunch.Core.Actions;
 using ReLaunch.Core.Catalogue;
+using ReLaunch.Core.Contracts;
 
 namespace ReLaunch.Service;
 
-public sealed record AppDto(string Id, string Name, bool Favorite, bool Trackable, string? IconHash, AppStatus Status, string Phase);
-
 public sealed record StatusDto(string Pc, string Session, string PcName);
-
-public sealed record ActionResultDto(bool Ok, string Phase, string? ErrorCode, string? Message);
 
 /// <summary>Everything a client (debug HTTP API now, relay later) can ask the PC to do.</summary>
 public sealed class ControlService(
@@ -58,7 +55,13 @@ public sealed class ControlService(
         events.Publish(new { type = "favorites" });
     }
 
-    public List<ActivityRow> GetActivity(int limit) => db.GetActivity(limit);
+    public List<ActivityDto> GetActivity(int limit)
+    {
+        var names = catalogue.Apps.ToDictionary(a => a.Id, a => a.Name);
+        return db.GetActivity(limit)
+            .Select(r => new ActivityDto(r.Time, r.DeviceId, r.AppId, names.TryGetValue(r.AppId, out var n) ? n : r.AppId, r.Action, r.Result))
+            .ToList();
+    }
 
     private ActionResultDto Record(string deviceId, string appId, ActionKind kind, ActionResultDto result)
     {

@@ -1,0 +1,18 @@
+<Page
+    x:Class="ReLaunch.App.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Padding="24" Spacing="16" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="Settings" />
+            <ToggleSwitch x:Name="StartupSwitch" Header="Start reLAUNCH when I sign in" OnContent="On" OffContent="Off" />
+            <ToggleSwitch x:Name="DebugSwitch" Header="Debug HTTP API on 127.0.0.1:5480" OnContent="On" OffContent="Off" />
+            <TextBlock x:Name="DebugNote" Opacity="0.7" TextWrapping="Wrap" Text="For troubleshooting with curl. Takes effect after the reLAUNCH service restarts." />
+            <StackPanel Spacing="4">
+                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="About" />
+                <TextBlock x:Name="AboutText" Opacity="0.8" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+            </StackPanel>
+            <Button x:Name="FolderButton" Content="Open Data Folder" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

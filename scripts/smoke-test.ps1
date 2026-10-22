@@ -44,6 +44,15 @@ try {
         Write-Host "stop -> $($r | ConvertTo-Json -Compress)"
     }
     Write-Host "Activity: $(Invoke-RestMethod "$base/api/activity" | ConvertTo-Json -Compress)"
+
+    # The desktop app opens every page against the running service (catches XAML and startup crashes).
+    $appExe = "$Root/app/ReLaunch.App.exe"
+    $selftestLog = "$Root/app/selftest.log"
+    Remove-Item $selftestLog -ErrorAction SilentlyContinue
+    $appProc = Start-Process $appExe -ArgumentList "--selftest" -PassThru
+    if (-not $appProc.WaitForExit(120000)) { Stop-Process -Id $appProc.Id -Force; throw "desktop app self-test timed out" }
+    if (Test-Path $selftestLog) { Get-Content $selftestLog | ForEach-Object { Write-Host "app: $_" } } else { Write-Host "app: no self-test log was written" }
+    if ($appProc.ExitCode -ne 0) { throw "desktop app self-test failed (exit code $($appProc.ExitCode))" }
 }
 catch {
     Write-Host "SMOKE TEST FAILED: $_"

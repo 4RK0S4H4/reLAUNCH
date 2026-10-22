@@ -5,7 +5,7 @@
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-    <NavigationView x:Name="Nav" IsBackButtonVisible="Collapsed" PaneDisplayMode="Left" IsSettingsVisible="False">
+    <NavigationView x:Name="Nav" IsBackButtonVisible="Collapsed" PaneDisplayMode="Left" IsSettingsVisible="False" OpenPaneLength="220">
         <NavigationView.MenuItems>
             <NavigationViewItem Content="Apps" Tag="apps">
                 <NavigationViewItem.Icon><FontIcon Glyph="&#xE71D;" /></NavigationViewItem.Icon>
@@ -25,8 +25,15 @@
                 <NavigationViewItem.Icon><FontIcon Glyph="&#xE713;" /></NavigationViewItem.Icon>
             </NavigationViewItem>
         </NavigationView.FooterMenuItems>
-        <Grid Padding="32">
-            <TextBlock x:Name="Placeholder" Style="{StaticResource TitleTextBlockStyle}" Text="reLAUNCH" />
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <InfoBar x:Name="ServiceBar" IsOpen="False" IsClosable="False" Severity="Error"
+                     Title="Can't reach the reLAUNCH service"
+                     Message="Start the 'reLAUNCH' service in Windows Services, or reinstall reLAUNCH." />
+            <Frame x:Name="ContentFrame" Grid.Row="1" />
         </Grid>
     </NavigationView>
 </Window>

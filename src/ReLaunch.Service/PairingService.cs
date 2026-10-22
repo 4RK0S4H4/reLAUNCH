@@ -2,13 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ReLaunch.Core;
+using ReLaunch.Core.Contracts;
 using ReLaunch.Core.Pipes;
 
 namespace ReLaunch.Service;
-
-public sealed record PairingInfo(string Code, string Url, long ExpiresAt);
-
-public sealed record DeviceInfo(string Id, string Name, long CreatedAt, long? LastSeen);
 
 /// <summary>One-time pairing codes (valid 5 minutes, sent hashed to the relay) and the phone device list.</summary>
 public sealed class PairingService(RelayClient relay)
