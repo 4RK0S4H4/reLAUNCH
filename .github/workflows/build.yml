@@ -54,5 +54,9 @@ jobs:
           cache: npm
           cache-dependency-path: relay/package-lock.json
       - run: npm ci
+      - name: Build the PWA (S4 Flat build + checker) and make sure the committed output is current
+        run: |
+          python3 web/build.py
+          git diff --exit-code -- public || (echo "relay/public is out of date: run python3 relay/web/build.py and commit" && exit 1)
       - run: npm run typecheck
       - run: npm test

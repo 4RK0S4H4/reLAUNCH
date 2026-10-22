@@ -1,1 +1,1876 @@
-<!doctype html><title>reLAUNCH</title>
+<title>reLAUNCH</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14b8a6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="reLAUNCH">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* S4 Flat v2.1 — Plate & Ink. Flat, monochrome by default, any accent. Circles, pills and rounded rectangles only. No shadows, no gradients, no blur. */
+
+/* ============ TOKENS ============ */
+:root {
+  --bg-base: #eef0f4;
+  --bg: color-mix(in srgb, var(--accent) var(--tint, 0%), var(--bg-base)); /* data-tint on <html> washes the ground with the accent */
+  --surface: #ffffff;
+  --surface-2: #e6e9ef;
+  --line: #d6dae2;
+  --line-strong: #767c89;
+  --fg: #0e1015;
+  --fg-2: #4d5361;
+  --fg-3: #5f6572;
+  /* Accent: ink by default. An app sets --accent (any colour) and --on-accent (black or white, whichever contrasts more; S4Flat.setAccent does this). */
+  --accent: var(--fg);
+  --on-accent: var(--bg);
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  --accent-line: var(--accent-line-l, var(--accent)); /* thin strokes, rings, dots, meters: always 3:1 on surface-2 (setAccent computes it) */
+  --nav-fill: var(--bg);
+  --nav-ink: var(--fg);
+  --ok: #157a3c; --ok-bg: #dcf5e4;
+  --warn: #9a5a06; --warn-bg: #fdf0cc;
+  --bad: #c0282d; --bad-bg: #fde3e2; --on-bad: #ffffff;
+  --info: #1d4ed8; --info-bg: #dbe6fd;
+  --scrim: rgba(14, 16, 21, 0.28);
+  /* Charts: the accent leads, greys follow. Never more than one hue plus status colours. */
+  --chart-1: var(--accent-line); --chart-2: var(--fg-2); --chart-3: var(--line-strong); --chart-4: var(--line); --chart-grid: var(--surface-2);
+
+  --fs-display: clamp(32px, 6vw, 52px); --fs-title: 20px; --fs-body: 15px; --fs-small: 13px; --fs-micro: 12px;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Radius by role: the bigger the plate, the rounder. Actions are pills/circles. Choices are soft squares that round when chosen. */
+  --r-xs: 6px; --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 30px; --r-2xl: 36px; --r-full: 999px;
+
+  /* Motion: Ink (small controls fill), Glide (a highlight moves along a row), Plate (big things arrive, recede, morph). One curve family, no overshoot. */
+  --ease-ink: cubic-bezier(.2, .7, .2, 1);
+  --ease-plate: cubic-bezier(.16, 1, .3, 1);
+  --ease-exit: cubic-bezier(.4, 0, .9, .6);
+  --t-press: 120ms;
+  --t-ink: 220ms;
+  --t-glide: 240ms;
+  --t-plate: 300ms;
+  --t-morph: 340ms;
+  --t-recede: 320ms;
+  --t-exit: 180ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-base: #0b0c0f; --surface: #16181d; --surface-2: #22252c; --line: #2b2f37; --line-strong: #6f7584;
+    --fg: #f1f2f5; --fg-2: #a6abb7; --fg-3: #8b909c;
+    --ok: #5ad48a; --ok-bg: #11301e; --warn: #f5be4a; --warn-bg: #33270b; --bad: #f7807c; --bad-bg: #3a1616; --on-bad: #0b0c0f;
+    --info: #7aa7ff; --info-bg: #13244a;
+    --scrim: rgba(0, 0, 0, 0.5);
+    --accent-line: var(--accent-line-d, var(--accent));
+    color-scheme: dark;
+  }
+}
+[data-tint] { --tint: 5%; }
+@media (prefers-color-scheme: dark) { :root[data-tint]:not([data-theme="light"]) { --tint: 9%; } }
+:root[data-theme="dark"][data-tint] { --tint: 9%; }
+:root[data-theme="dark"] {
+  --bg-base: #0b0c0f; --surface: #16181d; --surface-2: #22252c; --line: #2b2f37; --line-strong: #6f7584;
+  --fg: #f1f2f5; --fg-2: #a6abb7; --fg-3: #8b909c;
+  --ok: #5ad48a; --ok-bg: #11301e; --warn: #f5be4a; --warn-bg: #33270b; --bad: #f7807c; --bad-bg: #3a1616; --on-bad: #0b0c0f;
+  --info: #7aa7ff; --info-bg: #13244a;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --accent-line: var(--accent-line-d, var(--accent));
+  color-scheme: dark;
+}
+
+/* ============ BASE ============ */
+/* Resets use :where() so they carry no extra weight and never override a component's own background or padding. */
+:where(.f-body), :where(.f-body) * { box-sizing: border-box; }
+.f-body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 140px; /* room for the floating dock */
+}
+.f-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+:where(.f-body) :where(button, input, select, textarea) { font: inherit; color: inherit; }
+:where(.f-body) :where(button) { border: 0; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:where(.f-body) :where(input, select, textarea) { -webkit-appearance: none; appearance: none; border-radius: 0; }
+:where(.f-body) :focus-visible { outline: 2px solid var(--accent-line); outline-offset: 3px; }
+/* Text inputs show focus with their own rounded inner ring, not a rectangle outline. */
+:where(.f-body) :where(input, select, textarea):focus-visible { outline: none; }
+.f-body [hidden] { display: none !important; }
+.f-num { font-variant-numeric: tabular-nums; }
+.f-i { width: 22px; height: 22px; fill: currentColor; flex: none; }
+.f-i.sm { width: 18px; height: 18px; }
+.f-ico { position: relative; width: 22px; height: 22px; flex: none; }
+.f-ico > * { position: absolute; inset: 0; transition: opacity var(--t-ink) var(--ease-ink); }
+.f-ico .fl, .on > .f-ico .ln, [aria-current="page"] > .f-ico .ln { opacity: 0; }
+.on > .f-ico .fl, [aria-current="page"] > .f-ico .fl { opacity: 1; }
+
+/* View transitions: named plates morph between views (and between pages, see @view-transition); the rest crossfades quickly. */
+@view-transition { navigation: auto; }
+::view-transition-group(*) { animation-duration: var(--t-morph); animation-timing-function: var(--ease-plate); }
+::view-transition-group(root) { animation-duration: 200ms; animation-timing-function: var(--ease-ink); }
+.f-vt *, .f-vt *::before, .f-vt *::after, .f-boot *, .f-boot *::before, .f-boot *::after { transition: none !important; }
+
+/* The page container. It eases back when a plate sits on top. */
+.f-wrap > *, .f-grid-2 > *, .f-tiles > * { min-width: 0; }
+.f-wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; transform-origin: 50% var(--f-oy, 50vh); transition: transform var(--t-recede) var(--ease-plate); }
+.f-receded .f-wrap { transform: scale(.965); }
+.f-receded .f-wrap, .f-receding .f-wrap { will-change: transform; }
+
+/* ============ PRESS ============ */
+.f-tap {
+  position: relative; --press: .96;
+  transition: transform var(--t-press) var(--ease-ink), color var(--t-ink) var(--ease-ink), background-color var(--t-ink) var(--ease-ink), box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink);
+}
+.f-tap:active { transform: scale(var(--press)); }
+.f-tap::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity var(--t-press) var(--ease-ink); }
+@media (hover: hover) { .f-tap:hover::after { opacity: .06; } }
+.f-tap:active::after { opacity: .1; }
+.f-tap[disabled], .f-tap[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+
+/* ============ INK: colour pours from the touch point and drains back to it ============ */
+.f-ink { position: relative; isolation: isolate; overflow: hidden; }
+.f-ink::before {
+  content: ""; position: absolute; z-index: -1; border-radius: 50%;
+  left: var(--x, 50%); top: var(--y, 50%);
+  width: var(--d, 300px); height: var(--d, 300px);
+  margin: calc(var(--d, 300px) / -2) 0 0 calc(var(--d, 300px) / -2);
+  background: var(--fill, var(--accent));
+  transform: scale(0);
+  transition: transform var(--t-exit) var(--ease-exit);
+}
+.f-ink.on::before { transform: scale(1); transition: transform var(--t-ink) var(--ease-ink); }
+.f-ink.on { transition-delay: 0s, 50ms, 0s, 0s, 0s; }
+
+/* ============ ARRIVE: small plates (dialog, toast) slide in from where they belong ============ */
+.f-arrive {
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: var(--base, none) translateY(var(--dist, 24px));
+  transition: opacity var(--t-exit) var(--ease-exit), transform var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit);
+}
+.f-arrive.open {
+  opacity: 1; visibility: visible; pointer-events: auto; transform: var(--base, none);
+  transition: opacity 120ms linear, transform var(--t-plate) var(--ease-plate), visibility 0s;
+}
+.f-scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; visibility: hidden; transition: opacity var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit); }
+.f-scrim.open { opacity: 1; visibility: visible; transition: opacity var(--t-recede) var(--ease-plate), visibility 0s; }
+
+/* ============ TYPE + PANELS ============ */
+.f-h1 { margin: 0; font-size: clamp(32px, 6vw, 52px); line-height: 1.03; font-weight: 800; letter-spacing: -.035em; text-wrap: balance; }
+.f-h2 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+.f-h3 { margin: 0; font-size: 17px; line-height: 1.3; font-weight: 700; letter-spacing: -.01em; }
+.f-eyebrow { font-size: 12px; font-weight: 600; color: var(--fg-3); letter-spacing: .04em; text-transform: uppercase; }
+.f-muted { color: var(--fg-2); }
+.f-note { margin: 0; color: var(--fg-2); font-size: 14px; }
+.f-panel { background: var(--surface); border-radius: var(--r-xl); padding: 24px; display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 480px) { .f-panel { padding: 18px; } }
+.f-panel-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.f-panel-head p { margin: 2px 0 0; color: var(--fg-2); font-size: 14px; }
+.f-panel-head > :last-child:not(:first-child) { margin-left: auto; }
+.f-grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .f-grid-2 { grid-template-columns: 1fr; } }
+.f-stack { display: grid; gap: 12px; min-width: 0; }
+.f-empty { background: var(--surface-2); border-radius: var(--r-lg); padding: 22px; text-align: center; color: var(--fg-2); font-size: 14px; display: grid; justify-items: center; gap: 8px; }
+.f-empty .f-mark { --s: 44px; background: var(--surface); }
+.f-empty .f-mark::after { background: var(--line-strong); }
+
+/* ============ TOP BAR (floating pill) ============ */
+.f-topbar {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); z-index: 20; margin-top: 12px;
+  display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--r-full); padding: 8px 8px 8px 10px;
+}
+.f-brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; font-weight: 700; font-size: 16px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; transition: opacity var(--t-ink) var(--ease-ink); }
+/* The mark: a soft square inside a circle. Logo, favicon, empty states and the loader all use it. */
+.f-mark, .f-logo { --s: 36px; width: var(--s); height: var(--s); border-radius: 50%; background: var(--accent); display: inline-grid; place-items: center; flex: none; }
+.f-mark::after, .f-logo::after { content: ""; width: 39%; height: 39%; border-radius: 28%; background: var(--on-accent); }
+.f-mark.loading::after { animation: f-mark 1.1s var(--ease-plate) infinite; }
+@keyframes f-mark { 0% { transform: rotate(0); border-radius: 28%; } 50% { transform: rotate(45deg); border-radius: 50%; } 100% { transform: rotate(90deg); border-radius: 28%; } }
+.f-icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--fg); flex: none; }
+.f-icon-btn.on { background: var(--fg); color: var(--bg); }
+.f-avatar { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); font-weight: 700; font-size: 13px; flex: none; }
+.f-avatar.round { border-radius: 50%; background: var(--fg); color: var(--bg); }
+.f-search { position: absolute; left: 8px; top: 8px; bottom: 8px; width: min(440px, calc(100% - 164px)); display: flex; align-items: center; border-radius: var(--r-full); background: var(--surface-2); padding: 0 16px; opacity: 0; visibility: hidden; transform: translateX(-10px); transition: opacity var(--t-exit) var(--ease-exit), transform var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit); }
+.f-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: 0; font-size: 15px; }
+.f-search:focus-within { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-search input::-webkit-search-decoration, .f-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.f-searching .f-search { opacity: 1; visibility: visible; transform: none; transition: opacity 120ms linear, transform var(--t-plate) var(--ease-plate), visibility 0s; }
+.f-searching .f-brand { opacity: 0; transition: opacity var(--t-exit) var(--ease-exit); }
+
+/* ============ ACTIONS (pills) ============ */
+.f-btn { position: relative; height: 46px; padding: 0 22px; border-radius: var(--r-full); font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; overflow: hidden; isolation: isolate; white-space: nowrap; }
+.f-btn.filled { background: var(--accent); color: var(--on-accent); }
+.f-btn.tonal { background: var(--accent-soft); color: var(--fg); }
+.f-btn.outline { box-shadow: inset 0 0 0 2px var(--line); color: var(--fg); }
+.f-btn.text { color: var(--fg); padding: 0 14px; }
+.f-btn.danger { background: var(--bad-bg); color: var(--bad); }
+.f-btn.danger-filled { background: var(--bad); color: var(--on-bad); }
+.f-btn.sm { height: 38px; padding: 0 16px; font-size: 14px; }
+.f-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.f-ripple { position: absolute; border-radius: 50%; background: currentColor; pointer-events: none; z-index: -1; }
+/* A button that confirms in place: same size, green pours in, label swaps. */
+.f-confirm { --fill: var(--ok); }
+.f-confirm.on { color: var(--surface); }
+.f-confirm .lbl { display: inline-flex; align-items: center; gap: 6px; }
+.f-confirm .a, .f-confirm .b { display: inline-flex; align-items: center; gap: 6px; transition: opacity var(--t-ink) var(--ease-ink), transform var(--t-ink) var(--ease-ink); }
+.f-confirm .b { position: absolute; opacity: 0; transform: translateY(8px); }
+.f-confirm.on .a { opacity: 0; transform: translateY(-8px); transition-duration: var(--t-exit); }
+.f-confirm.on .b { opacity: 1; transform: none; transition-delay: 60ms; }
+
+/* ============ CHOICES (ink + shape as state: soft square → circle/pill) ============ */
+.f-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-chip { --h: 38px; height: var(--h); padding: 0 16px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 14px; font-weight: 600; color: var(--fg-2); --fill: var(--fg); display: inline-flex; align-items: center; gap: 8px; }
+.f-chip.on { color: var(--bg); border-radius: calc(var(--h) / 2); }
+.f-count { font-size: 12px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-xs); background: color-mix(in srgb, currentColor 12%, transparent); display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+
+.f-check { position: relative; width: 26px; height: 26px; border-radius: 8px; flex: none; box-shadow: inset 0 0 0 2px var(--line-strong); display: grid; place-items: center; color: var(--on-accent); --fill: var(--accent); transition: box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink); }
+.f-check.on { box-shadow: inset 0 0 0 2px transparent; border-radius: 50%; }
+.f-check svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.f-check path { stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset var(--t-exit) var(--ease-exit); }
+.f-check.on path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t-ink) var(--ease-ink) 80ms; }
+.f-pick { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; --press: .88; }
+.f-pick.f-tap::after { inset: 9px; }
+
+.f-toggle { position: relative; width: 56px; height: 34px; border-radius: var(--r-full); background: var(--surface-2); flex: none; --fill: var(--accent); --press: .94; box-shadow: inset 0 0 0 2px var(--line); }
+.f-toggle.on { box-shadow: inset 0 0 0 2px transparent; }
+/* Moving parts are always round: the knob is a circle that grows and shows a check when on, and stretches as it travels (runtime). */
+.f-toggle > i { position: absolute; z-index: 1; top: 4px; left: 4px; width: 26px; height: 26px; transform: scale(.7); transition: transform var(--t-glide) var(--ease-plate); }
+.f-toggle > i > b { position: absolute; inset: 0; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; transition: background-color var(--t-ink) var(--ease-ink); }
+.f-toggle.on > i { transform: translateX(22px); }
+.f-toggle.on > i > b { background: var(--on-accent); }
+.f-toggle > i svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.f-toggle > i path { stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset var(--t-exit) var(--ease-exit); }
+.f-toggle.on > i path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t-ink) var(--ease-ink) 90ms; }
+.f-setting { display: flex; align-items: center; gap: 14px; justify-content: space-between; padding: 4px 0; }
+.f-setting small { display: block; color: var(--fg-2); font-size: 13px; }
+
+.f-radios { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-radio { --h: 46px; display: inline-flex; align-items: center; gap: 10px; height: var(--h); padding: 0 18px 0 12px; border-radius: 14px; background: var(--surface-2); font-weight: 600; font-size: 14px; --fill: var(--accent-soft); }
+.f-radio.on { border-radius: calc(var(--h) / 2); }
+.f-radio > i { width: 22px; height: 22px; border-radius: 7px; box-shadow: inset 0 0 0 2px var(--line-strong); display: grid; place-items: center; transition: box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink); }
+.f-radio > i::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-line); transform: scale(0); transition: transform var(--t-exit) var(--ease-exit); }
+.f-radio.on > i { box-shadow: inset 0 0 0 2px var(--accent-line); border-radius: 50%; }
+.f-radio.on > i::after { transform: scale(1); transition: transform var(--t-ink) var(--ease-ink) 40ms; }
+
+/* A square choice that becomes a circle: dates, sizes, quick picks. */
+.f-choice { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--fg); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; --fill: var(--accent); --press: .9; }
+.f-choice.on { color: var(--on-accent); border-radius: 50%; }
+.f-choice.today { box-shadow: inset 0 0 0 2px var(--line-strong); }
+.f-choice.today.on { box-shadow: inset 0 0 0 2px transparent; }
+.f-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.f-choices label { display: grid; justify-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--fg-3); }
+
+/* ============ GLIDE: segmented ============ */
+.f-seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border-radius: var(--r-full); padding: 4px; }
+.f-seg > .f-bead { position: absolute; top: 4px; left: 4px; height: calc(100% - 8px); border-radius: var(--r-full); background: var(--accent); transition: transform var(--t-glide) var(--ease-plate); }
+.f-seg > button { position: relative; z-index: 1; height: 36px; padding: 0 16px; border-radius: var(--r-full); font-size: 14px; font-weight: 600; color: var(--fg-2); transition: color var(--t-ink) var(--ease-ink); }
+.f-seg > button[aria-pressed="true"] { color: var(--on-accent); transition-delay: 60ms; }
+
+/* ============ STATUS ============ */
+.f-pill { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--surface); color: var(--fg-2); transition: background-color var(--t-ink) var(--ease-ink), color var(--t-ink) var(--ease-ink); }
+.f-pill.ok { background: var(--ok-bg); color: var(--ok); }
+.f-pill.warn { background: var(--warn-bg); color: var(--warn); }
+.f-pill.bad { background: var(--bad-bg); color: var(--bad); }
+.f-pill.info { background: var(--info-bg); color: var(--info); }
+.f-banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md); font-size: 14px; }
+.f-banner.ok { background: var(--ok-bg); color: var(--ok); } .f-banner.warn { background: var(--warn-bg); color: var(--warn); }
+.f-banner.bad { background: var(--bad-bg); color: var(--bad); } .f-banner.info { background: var(--info-bg); color: var(--info); }
+
+/* ============ TILES (plates that open) ============ */
+.f-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.f-tile { text-align: left; background: var(--surface-2); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 6px; --press: .98; min-width: 0; }
+.f-tile .k { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--fg-2); }
+.f-tile .v { font-size: 28px; font-weight: 800; letter-spacing: -.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.f-tile .s { font-size: 13px; color: var(--fg-2); }
+.f-bars { display: flex; align-items: flex-end; gap: 5px; height: 40px; margin-top: 8px; }
+.f-bars i { flex: 1; height: 100%; border-radius: 3px; background: var(--fg); opacity: .16; transform-origin: bottom; }
+.f-bars i:last-child { opacity: 1; background: var(--chart-1); }
+
+/* ============ ROWS (plates you can open, select and swipe) ============ */
+.f-list { display: grid; gap: 8px; }
+.f-slot { position: relative; border-radius: var(--r-lg); }
+.f-behind { position: absolute; inset: 0; border-radius: inherit; background: var(--surface-2); color: var(--fg-2); display: flex; align-items: center; gap: 8px; padding: 0 20px; font-weight: 700; font-size: 14px; transition: background-color var(--t-ink) var(--ease-ink), color var(--t-ink) var(--ease-ink); }
+.f-behind.armed { background: var(--ok); color: var(--surface); }
+.f-rowplate { position: relative; z-index: 1; border-radius: inherit; }
+.f-row { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 16px 12px 12px; --press: .985; touch-action: pan-y; }
+.f-row.sel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-row.f-active { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-row.has-pick { padding-left: 52px; }
+.f-rowplate > .f-pick { position: absolute; z-index: 2; left: 3px; top: calc(50% - 22px); }
+.f-rowplate.locked > .f-pick { visibility: hidden; }
+.f-row .main { flex: 1; min-width: 0; }
+.f-row .t { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-row .m { display: block; font-size: 13px; color: var(--fg-2); }
+.f-row .side { display: grid; justify-items: end; gap: 4px; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .f-row .f-avatar { display: none; } }
+
+/* ============ FIELDS ============ */
+.f-field { display: grid; gap: 6px; }
+.f-field label { font-size: 13px; font-weight: 600; color: var(--fg-2); }
+.f-field input, .f-field select, .f-field textarea { appearance: none; -webkit-appearance: none; height: 48px; border: 0; border-radius: var(--r-md); background: var(--surface-2); padding: 0 16px; outline: 0; transition: box-shadow var(--t-ink) var(--ease-ink); width: 100%; min-width: 0; }
+.f-field textarea { height: auto; min-height: 96px; padding: 12px 16px; resize: vertical; }
+.f-field input:focus, .f-field select:focus, .f-field textarea:focus { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-field.error input, .f-field.error select { box-shadow: inset 0 0 0 2px var(--bad); }
+.f-field .help { font-size: 12px; color: var(--fg-3); }
+.f-field.error .help { color: var(--bad); }
+.f-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f-range { -webkit-appearance: none; appearance: none; width: 100%; height: 32px; background: transparent; margin: 0; --p: 50%; }
+.f-range::-webkit-slider-runnable-track { height: 10px; border-radius: var(--r-full); background: linear-gradient(to right, var(--accent-line) var(--p), var(--surface-2) var(--p)); }
+.f-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--surface); transition: transform var(--t-press) var(--ease-ink); }
+.f-range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.f-range::-moz-range-track { height: 10px; border-radius: var(--r-full); background: var(--surface-2); }
+.f-range::-moz-range-progress { height: 10px; border-radius: var(--r-full); background: var(--accent-line); }
+.f-range::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--surface); }
+
+/* ============ DOCK (floating nav pill + circle; a left rail on wide screens) ============ */
+.f-dock { position: fixed; z-index: 42; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 8px; }
+.f-modal .f-dock, .f-layered .f-dock { z-index: 30; } /* under the scrim whenever a plate is open */
+.f-nav { position: relative; display: flex; gap: 4px; padding: 6px; background: var(--fg); border-radius: var(--r-full); }
+.f-nav > .f-bead { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--nav-fill); transition: transform var(--t-glide) var(--ease-plate); }
+.f-nav > a, .f-nav > button { position: relative; z-index: 1; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: color-mix(in srgb, var(--bg) 66%, var(--fg)); --press: .9; }
+.f-nav > [aria-current="page"] { color: var(--nav-ink); transition-delay: 0s, 60ms, 0s, 0s, 0s; }
+.f-fab { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; flex: none; --press: .92; }
+@media (min-width: 1100px) {
+  .f-body.f-has-dock { padding-left: max(112px, env(safe-area-inset-left, 0px)); padding-block: 0 48px; }
+  .f-dock { left: max(24px, calc(env(safe-area-inset-left, 0px) + 16px)); top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column-reverse; gap: 10px; }
+  .f-nav { flex-direction: column; }
+}
+
+/* ============ PLATES THAT SIT ON TOP ============ */
+/* Sheet: grows out of the circle that opened it; can be dragged down by .f-grab. */
+.f-sheet { align-content: start; position: fixed; z-index: 45; left: 50%; margin-left: calc(min(420px, 100vw - 32px) / -2); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: var(--surface); border-radius: var(--r-2xl); padding: 10px 24px 24px; display: grid; gap: 14px; }
+@media (min-width: 1100px) { .f-sheet { left: 104px; margin-left: 0; bottom: auto; top: var(--f-sheet-top, 24px); } }
+.f-grab { display: grid; gap: 10px; padding-top: 2px; cursor: grab; touch-action: none; user-select: none; }
+.f-grab::before { content: ""; justify-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
+/* Card: the tile or row you tapped becomes this. */
+.f-card { position: fixed; z-index: 46; top: max(84px, 10vh); left: max(16px, calc(50% - 280px)); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: var(--surface); border-radius: var(--r-xl); padding: 24px; display: grid; gap: 16px; align-content: start; }
+.f-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.f-big { font-size: clamp(30px, 8vw, 40px); font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.f-kv { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; }
+.f-kv > :first-child { color: var(--fg-2); } .f-kv > :last-child { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.f-meter { height: 8px; border-radius: 4px; background: var(--surface); overflow: hidden; grid-column: 1 / -1; }
+.f-meter > i { display: block; height: 100%; border-radius: 4px; background: var(--accent-line); transform-origin: left; }
+/* Dialog: arrives a short way up over a scrim. */
+.f-dialog { position: fixed; z-index: 46; left: 50%; top: 50%; --base: translate(-50%, -50%); --dist: 28px; width: min(400px, calc(100vw - 32px)); background: var(--surface); border-radius: var(--r-2xl); padding: 26px; display: grid; gap: 12px; }
+.f-dialog p { margin: 0; color: var(--fg-2); }
+.f-dialog .f-btns, .f-sheet .f-btns, .f-card .f-btns { justify-content: flex-end; }
+/* Selection bar: grows out of the check you ticked. */
+.f-selbar { position: fixed; z-index: 41; left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: calc(100vw - 32px); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 12px; background: var(--accent); color: var(--on-accent); border-radius: var(--r-full); padding: 6px 6px 6px 20px; white-space: nowrap; }
+.f-selbar button { height: 40px; padding: 0 18px; border-radius: var(--r-full); background: var(--on-accent); color: var(--accent); font-weight: 700; font-size: 14px; }
+@media (min-width: 1100px) { .f-selbar { bottom: 24px; } }
+/* Toast: drops from the top bar. */
+.f-toast { position: fixed; z-index: 50; left: 0; right: 0; margin: 0 auto; width: fit-content; --dist: -16px; top: calc(env(safe-area-inset-top, 0px) + 78px); background: var(--fg); color: var(--bg); border-radius: var(--r-full); padding: 6px 6px 6px 8px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; max-width: calc(100vw - 32px); }
+.f-toast .tc { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: var(--bg); display: grid; place-items: center; flex: none; }
+.f-toast .msg { padding-right: 10px; }
+.f-toast button { height: 34px; padding: 0 14px; border-radius: var(--r-full); background: color-mix(in srgb, var(--bg) 16%, var(--fg)); color: var(--bg); font-weight: 700; font-size: 13px; }
+
+/* ============ TOUCH: comfortable targets on coarse pointers ============ */
+@media (pointer: coarse) {
+  /* Press feedback waits a beat so starting a scroll doesn't flicker the rows under your thumb. */
+  .f-tap:active { transition-delay: 70ms, 0s, 0s, 0s, 0s; }
+  .f-tap:active::after { transition-delay: 70ms; }
+  .f-chip { --h: 44px; }
+  .f-seg > button { height: 40px; }
+  .f-btn.sm { height: 44px; }
+  .f-icon-btn { width: 44px; height: 44px; }
+  .f-setting { min-height: 52px; }
+}
+.f-setting { cursor: pointer; }
+
+/* ============ TABS: a bead glides between labels (no track) ============ */
+.f-seg.tabs { background: transparent; padding: 0; gap: 4px; grid-auto-columns: auto; }
+.f-seg.tabs > .f-bead { top: 0; left: 0; height: 100%; background: var(--surface-2); transition: transform var(--t-glide) var(--ease-plate), width var(--t-glide) var(--ease-plate); }
+.f-seg.tabs > button[aria-pressed="true"] { color: var(--fg); }
+
+/* ============ LEDGER TABLE ============ */
+.f-table-wrap { overflow-x: auto; margin: -6px -4px; padding: 0 4px; -webkit-overflow-scrolling: touch; }
+.f-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.f-table th { position: sticky; top: 0; z-index: 2; text-align: left; font-size: 12px; font-weight: 600; color: var(--fg-2); background: var(--surface-2); padding: 10px 14px; white-space: nowrap; }
+.f-table th:first-child { border-radius: var(--r-full) 0 0 var(--r-full); }
+.f-table th:last-child { border-radius: 0 var(--r-full) var(--r-full) 0; }
+.f-table td { background: var(--surface-2); padding: 12px 14px; white-space: nowrap; transition: background-color var(--t-ink) var(--ease-ink), box-shadow var(--t-ink) var(--ease-ink); }
+.f-table td:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
+.f-table td:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+.f-table td:first-child, .f-table th:first-child { position: sticky; left: 0; z-index: 1; }
+.f-table th:first-child { z-index: 3; }
+@media (max-width: 599px) { .f-hide-sm { display: none !important; } .f-dialog { --dist: 16px; } .f-toast { --dist: -10px; } }
+.f-table .num { text-align: right; }
+.f-table .wide { white-space: normal; min-width: 160px; }
+/* The .grow column takes the spare width and truncates, so numbers stay on screen on phones. */
+.f-table .grow { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 599px) { .f-table th, .f-table td { padding-left: 10px; padding-right: 10px; } .f-table td.pick { padding: 0 0 0 2px; } }
+.f-table td.pick { width: 44px; padding: 0 0 0 4px; }
+.f-table tbody tr.f-active td { box-shadow: inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.f-active td:first-child { box-shadow: inset 2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.f-active td:last-child { box-shadow: inset -2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td { background: var(--accent-soft); box-shadow: inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td:last-child { box-shadow: inset -2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+@media (hover: hover) { .f-table tbody tr:not(.sel):hover td { background: color-mix(in srgb, var(--fg) 5%, var(--surface-2)); } }
+.f-table tfoot td { background: var(--fg); color: var(--bg); font-weight: 700; }
+.f-table tfoot td:first-child { border-radius: var(--r-full) 0 0 var(--r-full); }
+.f-table tfoot td:last-child { border-radius: 0 var(--r-full) var(--r-full) 0; }
+.f-sort { display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; border-radius: var(--r-full); }
+th.num .f-sort { flex-direction: row-reverse; }
+.f-sort svg { width: 14px; height: 14px; fill: currentColor; opacity: .35; transition: transform var(--t-glide) var(--ease-plate), opacity var(--t-ink) var(--ease-ink); }
+th[aria-sort] .f-sort svg { opacity: 1; }
+th[aria-sort="descending"] .f-sort svg { transform: rotate(180deg); }
+
+/* ============ SIDE PANEL: on wide screens a card docks beside the list instead of covering it ============ */
+@media (min-width: 1280px) {
+  .f-card.is-side { top: 24px; bottom: 24px; left: auto; right: max(24px, env(safe-area-inset-right, 0px)); width: 420px; max-height: none; border-radius: var(--r-xl); }
+}
+@media (min-width: 1280px) {
+  .f-has-inspector .f-wrap { margin-right: 444px; }
+}
+
+/* ============ MENU: grows out of the button that opened it ============ */
+.f-menu { position: fixed; z-index: 47; min-width: 210px; max-width: calc(100vw - 32px); background: var(--surface); border-radius: var(--r-lg); padding: 6px; box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 2px; }
+.f-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 44px; padding: 0 12px; border-radius: var(--r-md); font-weight: 500; text-align: left; --press: .98; }
+.f-menu-item.danger { color: var(--bad); }
+.f-menu-sep { height: 1px; margin: 4px 10px; background: var(--line); }
+
+/* ============ TOOLTIP ============ */
+.f-tip { position: fixed; z-index: 60; pointer-events: none; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: var(--r-full); white-space: nowrap; opacity: 0; transform: translateY(4px); transition: opacity 120ms linear, transform var(--t-glide) var(--ease-plate); }
+.f-tip.show { opacity: 1; transform: none; }
+
+/* ============ PROGRESS ============ */
+.f-progress { height: 10px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
+.f-progress > i { display: block; height: 100%; border-radius: inherit; background: var(--accent-line); transform: translateX(calc((var(--v, 0) - 1) * 100%)); transition: transform var(--t-plate) var(--ease-plate); }
+.f-ring { position: relative; width: var(--s, 112px); height: var(--s, 112px); flex: none; }
+.f-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.f-ring .trk { stroke: var(--surface-2); }
+.f-ring .val { stroke: var(--accent-line); stroke-linecap: round; transition: stroke-dashoffset var(--t-plate) var(--ease-plate); }
+.f-ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-weight: 800; font-size: 24px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.f-ring .lbl small { font-size: 12px; font-weight: 600; color: var(--fg-2); letter-spacing: 0; }
+
+/* ============ LOADING: flat placeholders that softly pulse (no shimmer, no gradient) ============ */
+.f-skel { display: block; background: var(--surface-2); border-radius: var(--r-sm); animation: f-pulse 1.1s var(--ease-ink) infinite alternate; }
+.f-skel.line { height: 12px; }
+.f-skel.title { height: 20px; width: 45%; }
+.f-skel.circle { border-radius: 50%; }
+.f-skel.plate { height: 68px; border-radius: var(--r-lg); }
+@keyframes f-pulse { from { opacity: 1; } to { opacity: .45; } }
+
+/* ============ FILE DROP: ink pours from where the file is held ============ */
+.f-drop { display: grid; justify-items: center; gap: 6px; padding: 28px 20px; border-radius: var(--r-lg); background: var(--surface-2); text-align: center; color: var(--fg-2); font-size: 14px; cursor: pointer; --fill: var(--accent-soft); --press: .99; }
+.f-drop b { color: var(--fg); }
+.f-drop.on { color: var(--fg); }
+.f-drop input { display: none; }
+
+/* ============ CALENDAR ============ */
+.f-cal { display: grid; gap: 10px; width: 100%; max-width: 340px; }
+.f-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; }
+.f-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; }
+.f-cal-grid .dow { font-size: 12px; color: var(--fg-3); font-weight: 600; padding: 4px 0; }
+.f-cal-grid .f-choice { width: 40px; height: 40px; border-radius: 12px; background: transparent; }
+.f-cal-grid .f-choice.out { color: var(--fg-3); }
+.f-cal-grid .f-choice.on { border-radius: 50%; }
+
+/* ============ COMPACT DENSITY (data-density="compact" on <html>) ============ */
+[data-density="compact"] .f-wrap, [data-density="compact"] .f-grid-2 { gap: 14px; }
+[data-density="compact"] .f-panel { padding: 18px; gap: 14px; border-radius: var(--r-lg); }
+[data-density="compact"] .f-tiles { gap: 8px; }
+[data-density="compact"] .f-tile { padding: 14px; border-radius: var(--r-md); }
+[data-density="compact"] .f-tile .v { font-size: 24px; }
+[data-density="compact"] .f-list { gap: 6px; }
+[data-density="compact"] .f-slot, [data-density="compact"] .f-row { border-radius: var(--r-md); }
+[data-density="compact"] .f-row { padding: 8px 12px 8px 10px; gap: 12px; font-size: 14px; }
+[data-density="compact"] .f-row.has-pick { padding-left: 44px; }
+[data-density="compact"] .f-rowplate > .f-pick { left: -1px; }
+[data-density="compact"] .f-row .m { font-size: 12px; }
+[data-density="compact"] .f-row .f-avatar { width: 32px; height: 32px; border-radius: 10px; font-size: 12px; }
+[data-density="compact"] .f-check { width: 22px; height: 22px; border-radius: 7px; }
+[data-density="compact"] .f-check.on { border-radius: 50%; }
+[data-density="compact"] .f-chip { --h: 32px; padding: 0 12px; font-size: 13px; }
+[data-density="compact"] .f-btn { height: 38px; padding: 0 16px; font-size: 14px; }
+[data-density="compact"] .f-radio { --h: 38px; }
+[data-density="compact"] .f-seg > button { height: 30px; padding: 0 12px; font-size: 13px; }
+[data-density="compact"] .f-choice { width: 38px; height: 38px; border-radius: 12px; font-size: 14px; }
+[data-density="compact"] .f-choice.on { border-radius: 50%; }
+[data-density="compact"] .f-field input, [data-density="compact"] .f-field select { height: 40px; border-radius: var(--r-sm); }
+[data-density="compact"] .f-sheet, [data-density="compact"] .f-dialog { border-radius: var(--r-xl); }
+[data-density="compact"] .f-card { border-radius: var(--r-lg); }
+[data-density="compact"] .f-table { border-spacing: 0 4px; font-size: 13px; }
+[data-density="compact"] .f-table td { padding: 8px 12px; }
+[data-density="compact"] .f-table th { padding: 8px 12px; }
+[data-density="compact"] .f-menu-item { height: 38px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; transition-delay: 0s !important; animation-duration: 1ms !important; }
+  .f-receded .f-wrap { transform: none; }
+}
+/* end S4 Flat */
+
+@font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url("/fonts/inter.woff2") format("woff2"); }
+
+.app-ico { width: 44px; height: 44px; border-radius: 12px; background: var(--surface); display: grid; place-items: center; flex: none; overflow: hidden; font-weight: 700; font-size: 15px; color: var(--fg-2); }
+.app-ico img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.app-ico.big { width: 64px; height: 64px; border-radius: 18px; font-size: 22px; }
+.f-tile .app-ico { width: 48px; height: 48px; background: var(--surface); margin-bottom: 4px; }
+.f-tile .k { display: block; font-size: 15px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-tile .v { font-size: 20px; }
+.f-tile.off { opacity: .55; }
+.f-tile.busy .v { color: var(--fg-2); }
+.f-tile .s { min-height: 1.3em; }
+.card-hero { display: flex; align-items: center; gap: 16px; }
+.card-hero .f-big { flex: 1; min-width: 0; }
+.card-hero .f-mark { flex: none; }
+.f-card .f-btns .f-btn[disabled] { opacity: .4; pointer-events: none; }
+.f-row.has-star { padding-right: 64px; }
+.f-rowplate > .star { position: absolute; z-index: 2; right: 12px; top: calc(50% - 19px); width: 38px; padding: 0; justify-content: center; border-radius: 50%; }
+.f-rowplate > .star.on { border-radius: 50%; }
+.f-row .m, .f-row .t { max-width: 100%; }
+.f-rowplate.off .f-row { opacity: .55; }
+#actRows .f-row { cursor: default; }
+@media (max-width: 600px) { .f-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.f-panel { grid-template-columns: minmax(0, 1fr); }
+.f-field input { min-width: 0; }
+.f-list { grid-template-columns: minmax(0, 1fr); }
+
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ri-arrow-right-line" viewBox="0 0 24 24"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"/></symbol>
+  <symbol id="ri-close-line" viewBox="0 0 24 24"><path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z"/></symbol>
+  <symbol id="ri-contrast-2-line" viewBox="0 0 24 24"><path d="M12 21.9967C6.47715 21.9967 2 17.5196 2 11.9967C2 6.47386 6.47715 1.9967 12 1.9967C17.5228 1.9967 22 6.47386 22 11.9967C22 17.5196 17.5228 21.9967 12 21.9967ZM12 19.9967C16.4183 19.9967 20 16.415 20 11.9967C20 7.57843 16.4183 3.9967 12 3.9967C7.58172 3.9967 4 7.57843 4 11.9967C4 16.415 7.58172 19.9967 12 19.9967ZM7.00035 15.316C9.07995 15.1646 11.117 14.2939 12.7071 12.7038C14.2972 11.1137 15.1679 9.07666 15.3193 6.99706C15.6454 7.21408 15.955 7.46642 16.2426 7.75406C18.5858 10.0972 18.5858 13.8962 16.2426 16.2393C13.8995 18.5825 10.1005 18.5825 7.75736 16.2393C7.46971 15.9517 7.21738 15.6421 7.00035 15.316Z"/></symbol>
+  <symbol id="ri-error-warning-line" viewBox="0 0 24 24"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM11 7H13V13H11V7Z"/></symbol>
+  <symbol id="ri-file-list-3-fill" viewBox="0 0 24 24"><path d="M19 22H5C3.34315 22 2 20.6569 2 19V3C2 2.44772 2.44772 2 3 2H17C17.5523 2 18 2.44772 18 3V15H22V19C22 20.6569 20.6569 22 19 22ZM18 17V19C18 19.5523 18.4477 20 19 20C19.5523 20 20 19.5523 20 19V17H18ZM6 7V9H14V7H6ZM6 11V13H14V11H6ZM6 15V17H11V15H6Z"/></symbol>
+  <symbol id="ri-file-list-3-line" viewBox="0 0 24 24"><path d="M19 22H5C3.34315 22 2 20.6569 2 19V3C2 2.44772 2.44772 2 3 2H17C17.5523 2 18 2.44772 18 3V15H22V19C22 20.6569 20.6569 22 19 22ZM18 17V19C18 19.5523 18.4477 20 19 20C19.5523 20 20 19.5523 20 19V17H18ZM16 20V4H4V19C4 19.5523 4.44772 20 5 20H16ZM6 7H14V9H6V7ZM6 11H14V13H6V11ZM6 15H11V17H6V15Z"/></symbol>
+  <symbol id="ri-layout-grid-fill" viewBox="0 0 24 24"><path d="M22 12.999V20C22 20.5523 21.5523 21 21 21H13V12.999H22ZM11 12.999V21H3C2.44772 21 2 20.5523 2 20V12.999H11ZM11 3V10.999H2V4C2 3.44772 2.44772 3 3 3H11ZM21 3C21.5523 3 22 3.44772 22 4V10.999H13V3H21Z"/></symbol>
+  <symbol id="ri-layout-grid-line" viewBox="0 0 24 24"><path d="M21 3C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM11 13H4V19H11V13ZM20 13H13V19H20V13ZM11 5H4V11H11V5ZM20 5H13V11H20V5Z"/></symbol>
+  <symbol id="ri-logout-box-r-line" viewBox="0 0 24 24"><path d="M5 22C4.44772 22 4 21.5523 4 21V3C4 2.44772 4.44772 2 5 2H19C19.5523 2 20 2.44772 20 3V6H18V4H6V20H18V18H20V21C20 21.5523 19.5523 22 19 22H5ZM18 16V13H11V11H18V8L23 12L18 16Z"/></symbol>
+  <symbol id="ri-more-2-line" viewBox="0 0 24 24"><path d="M12 3C11.175 3 10.5 3.675 10.5 4.5C10.5 5.325 11.175 6 12 6C12.825 6 13.5 5.325 13.5 4.5C13.5 3.675 12.825 3 12 3ZM12 18C11.175 18 10.5 18.675 10.5 19.5C10.5 20.325 11.175 21 12 21C12.825 21 13.5 20.325 13.5 19.5C13.5 18.675 12.825 18 12 18ZM12 10.5C11.175 10.5 10.5 11.175 10.5 12C10.5 12.825 11.175 13.5 12 13.5C12.825 13.5 13.5 12.825 13.5 12C13.5 11.175 12.825 10.5 12 10.5Z"/></symbol>
+  <symbol id="ri-refresh-line" viewBox="0 0 24 24"><path d="M5.46257 4.43262C7.21556 2.91688 9.5007 2 12 2C17.5228 2 22 6.47715 22 12C22 14.1361 21.3302 16.1158 20.1892 17.7406L17 12H20C20 7.58172 16.4183 4 12 4C9.84982 4 7.89777 4.84827 6.46023 6.22842L5.46257 4.43262ZM18.5374 19.5674C16.7844 21.0831 14.4993 22 12 22C6.47715 22 2 17.5228 2 12C2 9.86386 2.66979 7.88416 3.8108 6.25944L7 12H4C4 16.4183 7.58172 20 12 20C14.1502 20 16.1022 19.1517 17.5398 17.7716L18.5374 19.5674Z"/></symbol>
+  <symbol id="ri-star-fill" viewBox="0 0 24 24"><path d="M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26Z"/></symbol>
+  <symbol id="ri-star-line" viewBox="0 0 24 24"><path d="M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26ZM12.0006 15.968L16.2473 18.3451L15.2988 13.5717L18.8719 10.2674L14.039 9.69434L12.0006 5.27502L9.96214 9.69434L5.12921 10.2674L8.70231 13.5717L7.75383 18.3451L12.0006 15.968Z"/></symbol>
+</svg>
+<div class="f-wrap">
+  <header class="f-topbar">
+    <div class="f-brand"><span class="f-mark" id="brandMark" aria-hidden="true"></span><span id="pcName">reLAUNCH</span></div>
+    <span class="f-pill" id="connPill" role="status">Connecting</span>
+    <button class="f-icon-btn f-tap" id="moreBtn" aria-label="More" aria-haspopup="menu" aria-expanded="false" data-tip="More"><svg class="f-i"><use href="#ri-more-2-line"/></svg></button>
+  </header>
+
+  <div class="f-banner warn" id="banner" hidden><svg class="f-i sm"><use href="#ri-error-warning-line"/></svg><span id="bannerText"></span></div>
+
+  <section class="f-panel" id="vFav" data-view="fav">
+    <div class="f-panel-head"><div><h2 class="f-h2">Favorites</h2><p>Tap an app to start, restart or stop it.</p></div></div>
+    <div class="f-tiles" id="tiles"></div>
+    <div class="f-empty" id="favEmpty" hidden><span class="f-mark" aria-hidden="true"></span><span id="favEmptyText">Star apps in All Apps to pin them here.</span></div>
+  </section>
+
+  <section class="f-panel" id="vApps" data-view="apps" hidden>
+    <div class="f-panel-head"><div><h2 class="f-h2">All Apps</h2><p>Swipe a row right to start it. Star the ones you use most.</p></div></div>
+    <div class="f-field"><label for="q">Search</label><input id="q" type="search" placeholder="Search apps" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="f-list" id="rows"></div>
+    <div class="f-empty" id="rowsEmpty" hidden><span class="f-mark" aria-hidden="true"></span>No apps match.</div>
+  </section>
+
+  <section class="f-panel" id="vAct" data-view="act" hidden>
+    <div class="f-panel-head"><div><h2 class="f-h2">Activity</h2><p>The latest actions from every paired phone.</p></div></div>
+    <div class="f-list" id="actRows"></div>
+    <div class="f-empty" id="actEmpty" hidden><span class="f-mark" aria-hidden="true"></span>Nothing has happened yet.</div>
+  </section>
+
+  <section class="f-panel" id="vPair" data-view="pair" hidden>
+    <div class="f-empty"><span class="f-mark" aria-hidden="true"></span>This phone is not paired with a PC yet.</div>
+    <div class="f-btns"><button class="f-btn filled f-tap" id="pairBtn" data-f-ripple>Pair This Phone</button></div>
+  </section>
+</div>
+
+<div class="f-menu" id="menu" hidden>
+  <button class="f-menu-item f-tap" id="mTheme"><svg class="f-i"><use href="#ri-contrast-2-line"/></svg>Switch Theme</button>
+  <button class="f-menu-item f-tap" id="mRefresh"><svg class="f-i"><use href="#ri-refresh-line"/></svg>Refresh</button>
+  <div class="f-menu-sep" role="separator"></div>
+  <button class="f-menu-item f-tap danger" id="mForget"><svg class="f-i"><use href="#ri-logout-box-r-line"/></svg>Forget This Phone</button>
+</div>
+
+<form class="f-sheet" id="pairSheet" hidden aria-label="Pair this phone">
+  <div class="f-grab" id="pairGrab"><h3 class="f-h3">Pair This Phone</h3></div>
+  <p class="f-muted">On the PC, open reLAUNCH → Phones → Pair a phone and scan the QR code with this phone's camera. Or type the code shown under it.</p>
+  <div class="f-field" id="codeField"><label for="code">Pairing code</label><input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCDE FGHJK"><span class="help" id="codeHelp">Codes work once and expire after 5 minutes.</span></div>
+  <div class="f-btns"><button type="button" class="f-btn outline f-tap" id="pairCancel">Cancel</button><button type="submit" class="f-btn filled f-tap">Pair</button></div>
+</form>
+
+<div class="f-card" id="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle" hidden>
+  <div class="f-card-head"><div><div class="f-eyebrow" id="cardEyebrow">Status</div><h3 class="f-h2" id="cardTitle"></h3></div>
+    <button class="f-icon-btn f-tap f-close" id="cardClose" aria-label="Close"><svg class="f-i"><use href="#ri-close-line"/></svg></button></div>
+  <div class="card-hero"><span class="app-ico big" id="cardIco"></span><span class="f-big" id="cardBig"></span><span class="f-mark loading" id="cardLoad" aria-label="Working" hidden></span></div>
+  <div class="f-stack">
+    <div class="f-kv"><span>Processes</span><span class="f-num" id="kvProcs">0</span></div>
+    <div class="f-kv"><span>Memory</span><span class="f-num" id="kvMem">0 MB</span></div>
+    <div class="f-kv"><span>Running For</span><span class="f-num" id="kvUp">—</span></div>
+  </div>
+  <p class="f-note" id="cardNote" hidden></p>
+  <div class="f-btns">
+    <button class="f-btn filled f-tap" id="bStart" data-f-ripple>Start</button>
+    <button class="f-btn tonal f-tap" id="bRestart" data-f-ripple>Restart</button>
+    <button class="f-btn danger f-tap" id="bStop">Stop</button>
+  </div>
+</div>
+
+<div class="f-dialog f-arrive" id="stopDlg" role="dialog" aria-modal="true" aria-labelledby="stopT">
+  <h3 class="f-h2" id="stopT">Stop this app?</h3>
+  <p id="stopP">It will close, and anything unsaved in it may be lost.</p>
+  <div class="f-btns"><button class="f-btn outline f-tap" id="stopNo">Cancel</button><button class="f-btn danger-filled f-tap" id="stopYes">Stop</button></div>
+</div>
+
+<div class="f-dock">
+  <nav class="f-nav" aria-label="Main" id="nav">
+    <button class="f-tap" data-f-nav data-go="fav" aria-current="page" aria-label="Favorites" data-tip="Favorites"><span class="f-ico"><svg class="f-i ln"><use href="#ri-star-line"/></svg><svg class="f-i fl"><use href="#ri-star-fill"/></svg></span></button>
+    <button class="f-tap" data-f-nav data-go="apps" aria-label="All Apps" data-tip="All Apps"><span class="f-ico"><svg class="f-i ln"><use href="#ri-layout-grid-line"/></svg><svg class="f-i fl"><use href="#ri-layout-grid-fill"/></svg></span></button>
+    <button class="f-tap" data-f-nav data-go="act" aria-label="Activity" data-tip="Activity"><span class="f-ico"><svg class="f-i ln"><use href="#ri-file-list-3-line"/></svg><svg class="f-i fl"><use href="#ri-file-list-3-fill"/></svg></span></button>
+  </nav>
+</div>
+
+<script>
+/* S4 Flat v2.1 runtime — Plate & Ink motion. No dependencies. Exposes window.S4Flat.
+   Call S4Flat.init() once after the markup exists. Everything else is opt-in helpers. */
+(function () {
+  var F = {}, root = document.documentElement;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var EASE = { ink: 'cubic-bezier(.2,.7,.2,1)', plate: 'cubic-bezier(.16,1,.3,1)', exit: 'cubic-bezier(.4,0,.9,.6)' };
+  var T = { press: 120, ink: 220, glide: 240, plate: 300, morph: 340, recede: 320, exit: 180 };
+  F.T = T; F.EASE = EASE;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function anim(el, kf, opt) { if (reduce || !el.animate) return null; return el.animate(kf, opt); }
+  function stop(el) { if (el && el.getAnimations) el.getAnimations().forEach(function (a) { a.cancel(); }); }
+  function done(a, fn) { if (a) a.onfinish = fn; else fn(); }
+  function compact() { return root.getAttribute('data-density') === 'compact'; }
+  var loose = []; /* closers for open things that don't recede the page (side panels, menus) */
+  F.anim = anim; F.stop = stop;
+
+  /* ---------- INK ---------- */
+  var lastPt = null;
+  /* iOS Safari only shows :active press states when the page listens for touches. */
+  document.addEventListener('touchstart', function () {}, { passive: true });
+  function small() { return innerWidth < 600; }
+  /* Travel budget: a morph may travel at most ~40% of the screen height; farther than that, the plate arrives in place. */
+  function withinBudget(a, b) { return Math.hypot((a.left + a.width / 2) - (b.left + b.width / 2), (a.top + a.height / 2) - (b.top + b.height / 2)) <= innerHeight * .42; }
+  document.addEventListener('pointerdown', function (e) { lastPt = { x: e.clientX, y: e.clientY, t: Date.now() }; }, true);
+  function aim(el, cx, cy) {
+    var r = el.getBoundingClientRect(), x, y;
+    if (cx != null) { x = cx; y = cy; }
+    else {
+      var fresh = lastPt && Date.now() - lastPt.t < 900 && lastPt.x >= r.left && lastPt.x <= r.right && lastPt.y >= r.top && lastPt.y <= r.bottom;
+      x = fresh ? lastPt.x - r.left : r.width / 2; y = fresh ? lastPt.y - r.top : r.height / 2;
+    }
+    var d = 2 * Math.hypot(Math.max(x, r.width - x), Math.max(y, r.height - y)) + 2;
+    el.style.setProperty('--x', x + 'px'); el.style.setProperty('--y', y + 'px'); el.style.setProperty('--d', d + 'px');
+    return { x: x, y: y, r: r };
+  }
+  /* Turn a .f-ink control on/off. Colour pours from the last touch point (or the centre, or cx/cy). */
+  F.ink = function (el, on, cx, cy) { aim(el, cx, cy); el.classList.toggle('on', !!on); return el; };
+  F.inkCenter = function (el, on) { return F.ink(el, on, el.offsetWidth / 2, el.offsetHeight / 2); };
+  F.drain = function (el) { if (el.classList.contains('on')) F.ink(el, false); };
+  F.prime = function (scope) { $$('.f-ink.on', scope).forEach(function (el) { aim(el, el.offsetWidth / 2, el.offsetHeight / 2); }); };
+
+  /* One-shot buttons: a soft ripple from the touch point. */
+  F.ripple = function (b) {
+    var o = aim(b), d = 2 * Math.hypot(Math.max(o.x, o.r.width - o.x), Math.max(o.y, o.r.height - o.y));
+    var s = document.createElement('span'); s.className = 'f-ripple';
+    s.style.width = s.style.height = d + 'px'; s.style.left = (o.x - d / 2) + 'px'; s.style.top = (o.y - d / 2) + 'px';
+    b.appendChild(s);
+    done(anim(s, [{ transform: 'scale(0)', opacity: .2 }, { transform: 'scale(1)', opacity: 0 }], { duration: 400, easing: EASE.ink }), function () { s.remove(); });
+  };
+
+  /* ---------- GLIDE ---------- */
+  /* Moves the .f-bead inside `container` under its active child ([aria-pressed=true], [aria-current], or .on). */
+  F.glide = function (container) {
+    var bead = $('.f-bead', container); if (!bead) return;
+    var on = $(':scope > [aria-pressed="true"], :scope > [aria-current="page"], :scope > [aria-current="true"], :scope > .on', container);
+    if (!on) { bead.style.opacity = 0; return; }
+    bead.style.opacity = '';
+    bead.style.width = on.offsetWidth + 'px'; bead.style.height = on.offsetHeight + 'px';
+    bead.style.transform = 'translate(' + (on.offsetLeft - bead.offsetLeft) + 'px,' + (on.offsetTop - bead.offsetTop) + 'px)';
+  };
+  F.glideAll = function () { $$('.f-seg, .f-nav').forEach(F.glide); };
+
+  /* ---------- RECEDE + SCRIM ---------- */
+  var holders = new Set(), scrim = null, wrap = null, onScrim = {}, recT = null;
+  function ensureScrim() {
+    if (scrim) return scrim;
+    scrim = document.createElement('div'); scrim.className = 'f-scrim'; document.body.appendChild(scrim);
+    scrim.addEventListener('click', function () {
+      var keys = Array.from(holders); var k = keys[keys.length - 1];
+      if (k && onScrim[k]) onScrim[k]();
+    });
+    return scrim;
+  }
+  /* Ease the page back (and dim it) while a plate named `key` is on top. `onDismiss` runs on scrim tap or Escape. */
+  F.recede = function (key, on, onDismiss, modal) {
+    ensureScrim(); wrap = wrap || $('.f-wrap');
+    if (on) { holders.delete(key); holders.add(key); if (onDismiss) onScrim[key] = onDismiss; if (modal) root.classList.add('f-modal-' + key); }
+    else { holders.delete(key); delete onScrim[key]; root.classList.remove('f-modal-' + key); }
+    var any = holders.size > 0;
+    /* Long pages skip the scale (too much to repaint); the scrim still dims. Compact density skips it too. */
+    var allow = !!wrap && document.body.getAttribute('data-f-recede') !== 'off' && wrap.offsetHeight < innerHeight * 8 && !compact() && !small(); /* phones: dim only */
+    var was = root.classList.contains('f-receded');
+    if (any && allow && !was) wrap.style.setProperty('--f-oy', (innerHeight / 2 - wrap.getBoundingClientRect().top) + 'px');
+    root.classList.toggle('f-receded', any && allow);
+    if (was && !(any && allow)) { root.classList.add('f-receding'); clearTimeout(recT); recT = setTimeout(function () { root.classList.remove('f-receding'); }, T.recede + 80); }
+    scrim.classList.toggle('open', any);
+    root.classList.toggle('f-layered', any);
+    /* Everything behind an open plate is inert: no focus, no taps, hidden from screen readers. */
+    $$('.f-wrap, .f-dock, .f-selbar').forEach(function (el) { if (any) el.setAttribute('inert', ''); else el.removeAttribute('inert'); });
+    root.classList.toggle('f-modal', Array.from(root.classList).some(function (c) { return c.indexOf('f-modal-') === 0; }));
+    document.dispatchEvent(new CustomEvent('f:layers', { detail: { open: any } }));
+  };
+  F.layersOpen = function () { return holders.size > 0; };
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (loose.length) { e.preventDefault(); loose[loose.length - 1](); return; }
+    if (!holders.size) return;
+    var keys = Array.from(holders), k = keys[keys.length - 1];
+    if (onScrim[k]) { e.preventDefault(); onScrim[k](); }
+  });
+  /* Where an element will sit once the page comes forward again. */
+  F.restingRect = function (el) {
+    wrap = wrap || $('.f-wrap');
+    var had = root.classList.contains('f-receded');
+    if (wrap) wrap.style.transition = 'none';
+    root.classList.remove('f-receded');
+    var r = el.getBoundingClientRect();
+    if (had) root.classList.add('f-receded');
+    if (wrap) { void wrap.offsetWidth; wrap.style.transition = ''; }
+    return r;
+  };
+
+  /* ---------- MORPH: a plate grows out of one shape and shrinks back into it ---------- */
+  function frame(R, t, radius, bg) {
+    return {
+      transform: 'translate(' + (t.left - R.left) + 'px,' + (t.top - R.top) + 'px)',
+      clipPath: 'inset(0px ' + Math.max(0, R.width - t.width) + 'px ' + Math.max(0, R.height - t.height) + 'px 0px round ' + radius + ')',
+      backgroundColor: bg
+    };
+  }
+  function full(radius, bg, dy) { return { transform: 'translate(0px,' + (dy || 0) + 'px)', clipPath: 'inset(0px 0px 0px 0px round ' + radius + ')', backgroundColor: bg }; }
+  function shapeOf(el, rect) {
+    var c = getComputedStyle(el), r = rect || el.getBoundingClientRect();
+    var rad = c.borderTopLeftRadius;
+    if (rad.indexOf('%') > -1 || parseFloat(rad) > Math.min(r.width, r.height) / 2) rad = (Math.min(r.width, r.height) / 2) + 'px';
+    return { rect: r, radius: rad, bg: c.backgroundColor };
+  }
+  F.shapeOf = shapeOf;
+  /* Grow `plate` (already visible, at its final place) out of `from` (an element or {rect,radius,bg}). Returns a Promise. */
+  F.morphIn = function (plate, from, opts) {
+    opts = opts || {};
+    var src = from && from.nodeType ? shapeOf(from) : from;
+    if (compact()) src = null; /* compact density: plates fade in place instead of morphing */
+    stop(plate);
+    var R = plate.getBoundingClientRect(), me = shapeOf(plate, R);
+    if (src && !withinBudget(src.rect, R)) src = null;
+    plate.style.willChange = 'transform, clip-path, opacity';
+    var lift = small() ? 10 : 16;
+    var a = src ? anim(plate, [frame(R, src.rect, src.radius, src.bg), full(me.radius, me.bg)], { duration: opts.duration || T.morph, easing: EASE.plate })
+                : anim(plate, [{ opacity: 0, transform: 'translateY(' + lift + 'px)' }, { opacity: 1, transform: 'none' }], { duration: T.plate, easing: EASE.plate });
+    Array.prototype.forEach.call(plate.children, function (c, i) {
+      stop(c); anim(c, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: T.ink, easing: EASE.ink, delay: (opts.contentDelay != null ? opts.contentDelay : 120) + i * 25, fill: 'backwards' });
+    });
+    return new Promise(function (res) { done(a, function () { plate.style.willChange = ''; res(); }); });
+  };
+  /* Shrink `plate` back into `to` (an element, a rect-shape, or null to drop and fade). `dy` = current drag offset. */
+  F.morphOut = function (plate, to, opts) {
+    opts = opts || {};
+    var dst = to && to.nodeType ? shapeOf(to, opts.rect) : to;
+    if (compact()) dst = null;
+    plate.style.willChange = 'transform, clip-path, opacity';
+    var R = plate.getBoundingClientRect(), me = shapeOf(plate, R), dy = opts.dy || 0;
+    stop(plate);
+    Array.prototype.forEach.call(plate.children, function (c) { stop(c); anim(c, [{ opacity: 1 }, { opacity: 0 }], { duration: 90, easing: EASE.exit, fill: 'forwards' }); });
+    var r = dst && dst.rect, onScreen = r && r.width > 0 && r.bottom > 0 && r.top < innerHeight && withinBudget(r, R);
+    var a = onScreen
+      ? anim(plate, [full(me.radius, me.bg, dy), frame(R, r, dst.radius, dst.bg)], { duration: T.plate, easing: EASE.plate, fill: 'forwards' })
+      : anim(plate, [{ opacity: 1, transform: 'translate(0px,' + dy + 'px)' }, { opacity: 0, transform: 'translate(0px,' + (dy + (small() ? 10 : 16)) + 'px)' }], { duration: T.exit, easing: EASE.exit, fill: 'forwards' });
+    return new Promise(function (res) { done(a, function () { stop(plate); plate.style.willChange = ''; Array.prototype.forEach.call(plate.children, stop); res(); }); });
+  };
+
+  /* ---------- PLATES: open a sheet/card out of an element ---------- */
+  /* opts: { hide: element hidden while open (default: source), recede: true, modal: false, onClose: fn, focus: element } */
+  var openPlates = new Map();
+  F.openPlate = function (plate, source, opts) {
+    opts = opts || {};
+    var side = plate.hasAttribute('data-side') && innerWidth >= 1280;
+    if (openPlates.has(plate)) {
+      var cur = openPlates.get(plate);
+      /* A docked side panel just swaps to the new source: content crossfades, the panel stays put. */
+      if (cur.side && source && cur.source !== source) {
+        cur.source.classList.remove('f-active'); source.classList.add('f-active'); cur.source = source;
+        Array.prototype.forEach.call(plate.children, function (c, i) { anim(c, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: T.ink, easing: EASE.ink, delay: i * 20, fill: 'backwards' }); });
+      }
+      return Promise.resolve();
+    }
+    if (side) opts = Object.assign({}, opts, { recede: false, hide: null });
+    plate.classList.toggle('is-side', side);
+    if (plate.hasAttribute('aria-modal')) plate.setAttribute('aria-modal', side ? 'false' : 'true'); /* a docked panel sits beside the page, not over it */
+    var key = plate.id || ('p' + Math.random().toString(36).slice(2));
+    var hide = opts.hide === undefined ? source : opts.hide;
+    var st = { source: source, hide: hide, key: key, opts: opts, side: side };
+    if (side && source) source.classList.add('f-active');
+    if (opts.recede === false) { st.closer = function () { F.closePlate(plate); }; loose.push(st.closer); }
+    openPlates.set(plate, st);
+    plate.hidden = false;
+    if (opts.position) opts.position(plate, source);
+    else if (plate.classList.contains('f-sheet') && source && innerWidth >= 1100) {
+      var fr = source.getBoundingClientRect();
+      plate.style.setProperty('--f-sheet-top', Math.max(16, Math.min(fr.top, innerHeight - plate.offsetHeight - 16)) + 'px');
+    }
+    else if (plate.classList.contains('f-card') && !side && source) {
+      /* Cards unfold next to what opened them, so the morph is short. */
+      var sr = source.getBoundingClientRect(), h = plate.offsetHeight, minTop = small() ? 72 : 84;
+      plate.style.top = Math.max(minTop, Math.min(sr.top - 12, innerHeight - h - 16)) + 'px';
+    } else if (plate.classList.contains('f-card')) plate.style.top = '';
+    var src = source ? shapeOf(source) : null;
+    if (hide) hide.style.visibility = 'hidden';
+    if (opts.recede !== false) F.recede(key, true, function () { F.closePlate(plate); }, opts.modal);
+    var p = F.morphIn(plate, src);
+    setTimeout(function () { var f = opts.focus || $('[autofocus], .f-close', plate); if (f && matchMedia('(hover: hover)').matches) f.focus({ preventScroll: true }); }, T.morph);
+    return p;
+  };
+  F.closePlate = function (plate, extra) {
+    var st = openPlates.get(plate); if (!st) return Promise.resolve();
+    openPlates.delete(plate);
+    if (st.closer) loose = loose.filter(function (f) { return f !== st.closer; });
+    if (st.side && st.source) st.source.classList.remove('f-active');
+    var r = st.source ? F.restingRect(st.source) : null;
+    if (st.opts.recede !== false) F.recede(st.key, false);
+    return F.morphOut(plate, st.source ? { rect: r, radius: shapeOf(st.source, r).radius, bg: shapeOf(st.source, r).bg } : null, extra).then(function () {
+      plate.hidden = true;
+      if (st.hide) st.hide.style.visibility = '';
+      if (st.source && st.source.focus) st.source.focus({ preventScroll: true });
+      if (st.opts.onClose) st.opts.onClose();
+    });
+  };
+  F.isOpen = function (plate) { return openPlates.has(plate); };
+
+  /* Drag a sheet down by its handle to close it. */
+  F.dragToClose = function (plate, handle) {
+    var s = null;
+    handle.addEventListener('pointerdown', function (e) {
+      if (!openPlates.has(plate)) return;
+      s = { y: e.clientY, t: performance.now(), dy: 0, v: 0 };
+      handle.setPointerCapture(e.pointerId);
+      stop(plate); wrap = wrap || $('.f-wrap');
+      [plate, wrap, scrim].forEach(function (x) { if (x) x.style.transition = 'none'; });
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!s) return;
+      var raw = e.clientY - s.y, now = performance.now(), dy = raw > 0 ? raw : raw * .15;
+      s.v = (dy - s.dy) / Math.max(1, now - s.t); s.t = now; s.dy = dy;
+      plate.style.transform = 'translateY(' + dy + 'px)';
+      var p = Math.max(0, Math.min(1, 1 - dy / 320));
+      if (wrap) wrap.style.transform = 'scale(' + (1 - .035 * p) + ')';
+      if (scrim) scrim.style.opacity = p;
+    });
+    var up = function () {
+      if (!s) return; var x = s; s = null;
+      [plate, wrap, scrim].forEach(function (el) { if (el) el.style.transition = ''; });
+      if (wrap) wrap.style.transform = ''; if (scrim) scrim.style.opacity = '';
+      plate.style.transform = '';
+      if (x.dy > 110 || x.v > .6) F.closePlate(plate, { dy: x.dy });
+      else anim(plate, [{ transform: 'translateY(' + x.dy + 'px)' }, { transform: 'none' }], { duration: T.glide, easing: EASE.plate });
+    };
+    handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', up);
+  };
+
+  /* ---------- ARRIVE: dialogs ---------- */
+  F.dialog = function (dlg, open, opener) {
+    dlg.classList.toggle('open', open);
+    F.recede(dlg.id || 'dialog', open, function () { F.dialog(dlg, false); }, true);
+    if (open) { dlg._opener = opener || document.activeElement; setTimeout(function () { var b = $('button, [href], input', dlg); if (b) b.focus({ preventScroll: true }); }, 60); }
+    else if (dlg._opener && dlg._opener.focus) dlg._opener.focus({ preventScroll: true });
+  };
+
+  /* ---------- TOAST ---------- */
+  var toastEl = null, toastT = null;
+  F.toast = function (msg, opts) {
+    opts = opts || {};
+    if (!toastEl) {
+      toastEl = document.createElement('div'); toastEl.className = 'f-toast f-arrive'; toastEl.setAttribute('role', 'status');
+      toastEl.innerHTML = '<span class="tc"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="msg"></span><button type="button" hidden>Undo</button>';
+      document.body.appendChild(toastEl);
+      $('button', toastEl).addEventListener('click', function () { var f = toastEl._undo; toastEl._undo = null; toastEl.classList.remove('open'); if (f) f(); });
+    }
+    $('.msg', toastEl).textContent = msg;
+    var b = $('button', toastEl); b.hidden = !opts.undo; b.textContent = opts.actionLabel || 'Undo'; toastEl._undo = opts.undo || null;
+    toastEl.classList.add('open');
+    clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('open'); toastEl._undo = null; }, opts.undo ? 4000 : 2000);
+  };
+
+  /* ---------- TEXT: changes in place roll softly (out up 90ms, in from below 170ms); never snap ---------- */
+  F.text = function (el, val, html) {
+    val = String(val);
+    var cur = html ? el.innerHTML : el.textContent;
+    if (el._fSwap) { el._fNext = { val: val, html: html }; return; }
+    if (val === cur) return;
+    var set = function (v, h) { if (h) el.innerHTML = v; else el.textContent = v; };
+    if (reduce || !el.animate) { set(val, html); return; }
+    if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block';
+    el._fSwap = true;
+    var out = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-4px)' }], { duration: 90, easing: EASE.exit, fill: 'forwards' });
+    out.onfinish = function () {
+      var n = el._fNext || { val: val, html: html }; el._fNext = null;
+      set(n.val, n.html); out.cancel(); el._fSwap = false;
+      el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 170, easing: EASE.ink });
+    };
+  };
+
+  /* ---------- SELECTION BAR: grows out of the check you ticked ---------- */
+  F.selbar = function (bar, show, fromCheck) {
+    var shown = !bar.hidden && !bar._leaving;
+    if (show === shown) return;
+    /* The bar is a consequence of selecting, not something you opened: it rises quietly in its own place. (fromCheck is kept for compatibility.) */
+    if (show) { bar._leaving = false; bar.hidden = false; F.morphIn(bar, null, { contentDelay: 60 }); }
+    else { bar._leaving = true; F.morphOut(bar, null).then(function () { if (bar._leaving) { bar.hidden = true; bar._leaving = false; } }); }
+  };
+
+  /* ---------- LISTS: leaving items go first, the rest glide into place, new ones fade in ---------- */
+  /* items: array of elements; isVisible(el) decides; leave: 'fade' | 'slide' | 'instant' */
+  var pendingList = new Map();
+  F.reflow = function (container, items, isVisible, leave) {
+    var pend = pendingList.get(container);
+    if (pend) { clearTimeout(pend.t); pend.run(); }
+    var leaving = items.filter(function (el) { return !el.hidden && !isVisible(el); });
+    var run = function () {
+      pendingList.delete(container);
+      leaving.forEach(function (el) { stop(el); });
+      var before = new Map();
+      items.forEach(function (el) { if (!el.hidden) before.set(el, el.getBoundingClientRect().top); });
+      items.forEach(function (el) { el.hidden = !isVisible(el); });
+      var any = false;
+      items.forEach(function (el) {
+        if (el.hidden) return; any = true;
+        var top = el.getBoundingClientRect().top;
+        if (before.has(el)) { var dy = before.get(el) - top; if (Math.abs(dy) > .5) anim(el, [{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: T.plate, easing: EASE.plate }); }
+        else anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: T.ink, easing: EASE.ink });
+      });
+      var empty = $(':scope > .f-empty', container);
+      if (empty) { var was = empty.hidden; empty.hidden = any; if (was && !any) anim(empty, [{ opacity: 0 }, { opacity: 1 }], { duration: T.ink, easing: EASE.ink }); }
+    };
+    if (leaving.length && !reduce && leave !== 'instant') {
+      leaving.forEach(function (el) {
+        anim(el, leave === 'slide' ? [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(56px)' }] : [{ opacity: 1 }, { opacity: 0 }], { duration: T.exit, easing: EASE.exit, fill: 'forwards' });
+      });
+      pendingList.set(container, { run: run, t: setTimeout(run, T.exit) });
+    } else run();
+  };
+
+  /* ---------- SWIPE: a row follows your finger; past the threshold it commits ---------- */
+  /* slot = .f-slot, plate = .f-rowplate, handle = .f-row. onCommit(tx) returns 'stay' or 'leave'. canSwipe() optional. */
+  F.swipe = function (slot, onCommit, canSwipe) {
+    var plate = $('.f-rowplate', slot), handle = $('.f-row', slot), behind = $('.f-behind', slot), s = null;
+    handle.addEventListener('pointerdown', function (e) { if (e.button > 0 || (canSwipe && !canSwipe())) return; s = { x: e.clientX, y: e.clientY, drag: false, tx: 0, id: e.pointerId }; });
+    handle.addEventListener('pointermove', function (e) {
+      if (!s || e.pointerId !== s.id) return;
+      var dx = e.clientX - s.x, dy = e.clientY - s.y;
+      if (!s.drag) {
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.3 && dx > 0) { s.drag = true; handle.setPointerCapture(e.pointerId); plate.style.transition = 'none'; }
+        else if (Math.abs(dy) > 10) { s = null; return; } else return;
+      }
+      var tx = Math.max(0, dx); if (tx > 120) tx = 120 + (tx - 120) * .35;
+      s.tx = tx; plate.style.transform = 'translateX(' + tx + 'px)';
+      if (behind) behind.classList.toggle('armed', tx > 96);
+    });
+    var end = function () {
+      if (!s) return; var x = s; s = null;
+      if (!x.drag) return;
+      handle._fDragged = true; setTimeout(function () { handle._fDragged = false; }, 60);
+      plate.style.transition = ''; plate.style.transform = '';
+      var reset = function () { if (behind) behind.classList.remove('armed'); };
+      if (x.tx > 96) {
+        var mode = onCommit(x.tx);
+        if (mode === 'leave') {
+          var a = anim(plate, [{ transform: 'translateX(' + x.tx + 'px)', opacity: 1 }, { transform: 'translateX(' + slot.offsetWidth + 'px)', opacity: 0 }], { duration: T.exit, easing: EASE.exit, fill: 'forwards' });
+          done(a, function () { slot.dispatchEvent(new CustomEvent('f:swiped')); stop(plate); reset(); });
+          return;
+        }
+      }
+      anim(plate, [{ transform: 'translateX(' + x.tx + 'px)' }, { transform: 'none' }], { duration: x.tx > 96 ? T.plate : T.glide, easing: EASE.plate });
+      setTimeout(reset, T.plate);
+    };
+    handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+    // Swallow the click that ends a drag.
+    handle.addEventListener('click', function (e) { if (handle._fDragged) { e.stopImmediatePropagation(); e.preventDefault(); handle._fDragged = false; } }, true);
+  };
+
+  /* ---------- THEME, ACCENT, DENSITY: a quiet crossfade ---------- */
+  F.crossfade = function (mutate) {
+    if (!document.startViewTransition || reduce) { mutate(); return; }
+    root.classList.add('f-vt');
+    var t = document.startViewTransition(mutate);
+    t.finished.finally(function () { root.classList.remove('f-vt'); });
+  };
+  function lum(hex) {
+    var h = hex.replace('#', ''); if (h.length === 3) h = h.replace(/./g, '$&$&');
+    return [0, 2, 4].map(function (i) { var c = parseInt(h.substr(i, 2), 16) / 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); })
+      .reduce(function (a, c, i) { return a + c * [.2126, .7152, .0722][i]; }, 0);
+  }
+  F.onColor = function (hex) { var L = lum(hex); return (1.05 / (L + .05)) >= ((L + .05) / .05) ? '#ffffff' : '#0e1015'; };
+  /* setAccent('#2f54eb') or setAccent('ink') for the monochrome default. Hex colours only. */
+  function hexMix(a, b, t) {
+    a = a.replace('#', ''); b = b.replace('#', '');
+    return '#' + [0, 2, 4].map(function (i) { var v = Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t); return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+  function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+  /* The accent nudged darker (light theme) or lighter (dark theme) until thin strokes reach 3:1 on surface-2. */
+  function lineFor(hex, ground, toward) { for (var t = 0; t <= 1.0001; t += .05) { var m = hexMix(hex, toward, t); if (contrast(m, ground) >= 3) return m; } return toward; }
+  F.contrast = contrast;
+  F.setAccent = function (a) {
+    var st = root.style, keys = ['--accent', '--on-accent', '--nav-fill', '--nav-ink', '--accent-line-l', '--accent-line-d'];
+    if (!a || a === 'ink') { keys.forEach(function (k) { st.removeProperty(k); }); return; }
+    if (a.length === 4) a = '#' + a.slice(1).replace(/./g, '$&$&');
+    st.setProperty('--accent', a); st.setProperty('--on-accent', F.onColor(a));
+    st.setProperty('--nav-fill', 'var(--accent)'); st.setProperty('--nav-ink', 'var(--on-accent)');
+    st.setProperty('--accent-line-l', lineFor(a, '#e6e9ef', '#000000'));
+    st.setProperty('--accent-line-d', lineFor(a, '#22252c', '#ffffff'));
+  };
+  F.isDark = function () { var t = root.getAttribute('data-theme'); return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+  F.toggleTheme = function () { var n = F.isDark() ? 'light' : 'dark'; F.crossfade(function () { root.setAttribute('data-theme', n); }); };
+  F.setDensity = function (compact) { F.crossfade(function () { if (compact) root.setAttribute('data-density', 'compact'); else root.removeAttribute('data-density'); F.glideAll(); F.prime(); }); };
+
+  /* ---------- AUTO-WIRING (data attributes) ----------
+     .f-toggle                    → toggles on click; fires 'f:change' {on}
+     .f-seg                       → buttons set aria-pressed, bead glides; fires 'f:change' {value}
+     [data-f-single]              → one .f-ink child on at a time (chips, radios, choices); fires 'f:change' {value}
+     [data-f-multi]               → each .f-ink child toggles; fires 'f:change' {value,on}
+     [data-f-ripple]              → ripple on click
+     .f-nav [data-f-nav]          → aria-current moves, bead glides
+     .f-confirm[data-done]        → pours green, rolls its .lbl to the data-done text, resets after 1.6s
+     .f-search-toggle             → toggles .f-searching on the closest .f-topbar
+     .f-setting                   → tapping the row flips its switch
+     table.f-table th[data-sort]  → sortable columns (data-sort="num" for numbers); fires 'f:sort'
+     .f-drop                      → file picker + drag-and-drop; fires 'f:files' {files}
+     [data-f-cal]                 → calendar (data-value="2026-10-23"); fires 'f:change' {value}
+     .f-progress[data-v] / .f-ring[data-v][data-label] → progress bar / ring (0–1)
+     [data-tip]                   → tooltip on mouse hover or keyboard focus
+     [data-f-vt]                  → view-transition name for morphs between views or pages */
+  F.wire = function (scope) {
+    scope = scope || document;
+    $$('.f-toggle:not([data-f-w])', scope).forEach(function (t) {
+      t.setAttribute('data-f-w', ''); t.setAttribute('role', 'switch'); t.setAttribute('aria-checked', t.classList.contains('on'));
+      if (!t.querySelector('i > b')) t.innerHTML = '<i><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 12.5l3.5 3.5 7.5-8"/></svg></b></i>';
+      t.addEventListener('click', function () {
+        var on = !t.classList.contains('on'), k = t.querySelector('i').getBoundingClientRect(), r = t.getBoundingClientRect();
+        F.ink(t, on, k.left - r.left + k.width / 2, r.height / 2); t.setAttribute('aria-checked', on);
+        /* the knob has a little give: it stretches along the track while it travels, then settles (no overshoot) */
+        anim(t.querySelector('i > b'), [{ transform: 'scaleX(1)' }, { transform: 'scaleX(1.32)', offset: .45 }, { transform: 'scaleX(1)' }], { duration: T.glide + 20, easing: EASE.plate });
+        t.dispatchEvent(new CustomEvent('f:change', { bubbles: true, detail: { on: on } }));
+      });
+    });
+    $$('.f-seg:not([data-f-w])', scope).forEach(function (seg) {
+      seg.setAttribute('data-f-w', '');
+      if (!$('.f-bead', seg)) { var b = document.createElement('span'); b.className = 'f-bead'; b.setAttribute('aria-hidden', 'true'); seg.insertBefore(b, seg.firstChild); }
+      $$(':scope > button', seg).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (btn.getAttribute('aria-pressed') === 'true') return;
+          $$(':scope > button', seg).forEach(function (x) { x.setAttribute('aria-pressed', x === btn); });
+          F.glide(seg); seg.dispatchEvent(new CustomEvent('f:change', { bubbles: true, detail: { value: btn.dataset.value || btn.textContent.trim() } }));
+        });
+      });
+    });
+    $$('[data-f-single]:not([data-f-w])', scope).forEach(function (g) {
+      g.setAttribute('data-f-w', '');
+      $$('.f-ink', g).forEach(function (it) {
+        var attr = it.getAttribute('role') === 'radio' ? 'aria-checked' : 'aria-pressed';
+        it.setAttribute(attr, it.classList.contains('on'));
+        it.addEventListener('click', function () {
+          if (it.classList.contains('on')) return;
+          $$('.f-ink', g).forEach(function (x) { if (x !== it) { F.drain(x); x.setAttribute(attr, 'false'); } });
+          F.ink(it, true); it.setAttribute(attr, 'true');
+          g.dispatchEvent(new CustomEvent('f:change', { bubbles: true, detail: { value: it.dataset.value || it.textContent.trim() } }));
+        });
+      });
+    });
+    $$('[data-f-multi]:not([data-f-w])', scope).forEach(function (g) {
+      g.setAttribute('data-f-w', '');
+      $$('.f-ink', g).forEach(function (it) {
+        it.setAttribute('aria-pressed', it.classList.contains('on'));
+        it.addEventListener('click', function () {
+          var on = !it.classList.contains('on'); F.ink(it, on); it.setAttribute('aria-pressed', on);
+          g.dispatchEvent(new CustomEvent('f:change', { bubbles: true, detail: { value: it.dataset.value || it.textContent.trim(), on: on } }));
+        });
+      });
+    });
+    $$('[data-f-ripple]:not([data-f-w])', scope).forEach(function (b) { b.setAttribute('data-f-w', ''); b.addEventListener('click', function () { F.ripple(b); }); });
+    $$('.f-confirm:not([data-f-w])', scope).forEach(function (b) {
+      b.setAttribute('data-f-w', ''); var tm, lbl = $('.lbl', b), from = lbl ? lbl.innerHTML : '', to = b.getAttribute('data-done');
+      var label = function (on) { if (lbl && to) F.text(lbl, on ? '<svg class="f-i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 15.17l9.19-9.19 1.42 1.41L10 18 3.64 11.64l1.41-1.41L10 15.17z"/></svg>' + to : from, true); };
+      b.addEventListener('click', function () {
+        clearTimeout(tm); if (b.classList.contains('on')) { F.ink(b, false); label(false); return; }
+        F.ink(b, true); label(true);
+        tm = setTimeout(function () { F.inkCenter(b, false); label(false); }, 1600);
+      });
+    });
+    $$('.f-nav:not([data-f-w])', scope).forEach(function (nav) {
+      nav.setAttribute('data-f-w', '');
+      if (!$('.f-bead', nav)) { var b = document.createElement('span'); b.className = 'f-bead'; b.setAttribute('aria-hidden', 'true'); nav.insertBefore(b, nav.firstChild); }
+      $$(':scope > [data-f-nav]', nav).forEach(function (it) {
+        it.addEventListener('click', function () { F.setNav(nav, it); });
+      });
+    });
+    $$('.f-search-toggle:not([data-f-w])', scope).forEach(function (b) {
+      b.setAttribute('data-f-w', '');
+      b.addEventListener('click', function () {
+        var bar = b.closest('.f-topbar'), on = !bar.classList.contains('f-searching');
+        bar.classList.toggle('f-searching', on); b.classList.toggle('on', on); b.setAttribute('aria-expanded', on);
+        var input = $('.f-search input', bar); if (input) { input.tabIndex = on ? 0 : -1; if (on) input.focus({ preventScroll: true }); else if (input.value) { input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })); } }
+      });
+    });
+    /* Whole settings rows toggle their switch. */
+    $$('.f-setting:not([data-f-w])', scope).forEach(function (row) {
+      row.setAttribute('data-f-w', '');
+      row.addEventListener('click', function (e) { if (e.target.closest('button, a, input, select, textarea, label')) return; var t = $('.f-toggle', row); if (t) t.click(); });
+    });
+    $$('table.f-table', scope).forEach(F.table);
+    $$('.f-drop', scope).forEach(F.drop);
+    $$('[data-f-cal]:not([data-f-w])', scope).forEach(function (el) { el.setAttribute('data-f-w', ''); F.calendar(el); });
+    $$('.f-progress[data-v]', scope).forEach(function (el) { F.progress(el, el.getAttribute('data-v')); });
+    $$('.f-ring[data-v]', scope).forEach(function (el) { F.ring(el, el.getAttribute('data-v'), el.getAttribute('data-label')); });
+    F.tips(scope); F.nameViews(scope);
+    F.prime(scope); F.glideAll();
+  };
+  F.setNav = function (nav, item) {
+    $$(':scope > [data-f-nav]', nav).forEach(function (x) { if (x === item) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); });
+    F.glide(nav);
+  };
+
+  /* ---------- REORDER: items glide to their new order (sorting) ---------- */
+  F.reorder = function (container, ordered) {
+    var before = new Map();
+    ordered.forEach(function (el) { before.set(el, el.getBoundingClientRect().top); });
+    ordered.forEach(function (el) { container.appendChild(el); });
+    ordered.forEach(function (el) {
+      var dy = before.get(el) - el.getBoundingClientRect().top;
+      if (Math.abs(dy) > .5) anim(el, [{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { duration: T.plate, easing: EASE.plate });
+    });
+  };
+
+  /* ---------- LEDGER TABLE: th[data-sort] (add data-sort="num" for numbers) sorts rows; cells may carry data-v ---------- */
+  var ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 7.83V20h-2V7.83l-5.36 5.36-1.42-1.41L12 4l7.78 7.78-1.42 1.41L13 7.83z"/></svg>';
+  F.table = function (table) {
+    if (table.hasAttribute('data-f-w')) return; table.setAttribute('data-f-w', '');
+    var body = table.tBodies[0];
+    $$('th[data-sort]', table).forEach(function (th) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'f-sort';
+      b.innerHTML = '<span></span>' + ARROW; b.firstChild.textContent = th.textContent.trim();
+      th.textContent = ''; th.appendChild(b);
+      b.addEventListener('click', function () {
+        var dir = th.getAttribute('aria-sort') === 'ascending' ? 'descending' : 'ascending';
+        $$('th[aria-sort]', table).forEach(function (x) { x.removeAttribute('aria-sort'); });
+        th.setAttribute('aria-sort', dir);
+        var i = th.cellIndex, num = th.getAttribute('data-sort') === 'num';
+        var key = function (tr) { var c = tr.cells[i], v = c.getAttribute('data-v') != null ? c.getAttribute('data-v') : c.textContent.trim(); return num ? parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0 : v.toLowerCase(); };
+        var rows = Array.prototype.slice.call(body.rows).sort(function (a, b) { var x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * (dir === 'ascending' ? 1 : -1); });
+        F.reorder(body, rows);
+        table.dispatchEvent(new CustomEvent('f:sort', { bubbles: true, detail: { column: i, dir: dir } }));
+      });
+    });
+  };
+
+  /* ---------- MENU: grows out of its button; closes on outside tap, Escape or choosing an item ---------- */
+  F.menu = function (btn, menu) {
+    if (openPlates.has(menu)) return F.closePlate(menu);
+    menu.hidden = false; menu.setAttribute('role', 'menu');
+    $$('.f-menu-item', menu).forEach(function (it) { it.setAttribute('role', 'menuitem'); });
+    var r = btn.getBoundingClientRect(), mw = menu.offsetWidth, mh = menu.offsetHeight;
+    var left = Math.max(16, Math.min(r.left, innerWidth - mw - 16)), top = r.bottom + 8;
+    if (top + mh > innerHeight - 16) top = Math.max(16, r.top - mh - 8);
+    menu.style.left = left + 'px'; menu.style.top = top + 'px';
+    btn.setAttribute('aria-expanded', 'true');
+    if (!menu._fw) {
+      menu._fw = true;
+      menu.addEventListener('click', function (e) { if (e.target.closest('.f-menu-item')) setTimeout(function () { F.closePlate(menu); }, 90); });
+    }
+    var outside = function (e) { if (!menu.contains(e.target) && !btn.contains(e.target)) F.closePlate(menu); };
+    document.addEventListener('pointerdown', outside, true);
+    return F.openPlate(menu, btn, { recede: false, hide: null, focus: matchMedia('(hover: hover)').matches ? $('.f-menu-item', menu) : null,
+      onClose: function () { btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('pointerdown', outside, true); } });
+  };
+
+  /* ---------- TOOLTIPS: [data-tip="Text"] on hover (mouse) or keyboard focus ---------- */
+  var tipEl = null, tipT = null;
+  function showTip(el) {
+    if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'f-tip'; tipEl.setAttribute('role', 'tooltip'); document.body.appendChild(tipEl); }
+    tipEl.textContent = el.getAttribute('data-tip');
+    var r = el.getBoundingClientRect(), w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    var top = r.top - h - 8; if (top < 8) top = r.bottom + 8;
+    tipEl.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8)) + 'px'; tipEl.style.top = top + 'px';
+    tipEl.classList.add('show');
+  }
+  function hideTip() { clearTimeout(tipT); if (tipEl) tipEl.classList.remove('show'); }
+  F.tips = function (scope) {
+    $$('[data-tip]:not([data-f-tw])', scope).forEach(function (el) {
+      el.setAttribute('data-f-tw', '');
+      if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', el.getAttribute('data-tip'));
+      el.addEventListener('pointerenter', function (e) { if (e.pointerType !== 'mouse') return; clearTimeout(tipT); tipT = setTimeout(function () { showTip(el); }, 350); });
+      el.addEventListener('pointerleave', hideTip); el.addEventListener('pointerdown', hideTip);
+      el.addEventListener('focus', function () { if (el.matches(':focus-visible')) showTip(el); });
+      el.addEventListener('blur', hideTip);
+    });
+  };
+
+  /* ---------- PROGRESS + RING ---------- */
+  F.progress = function (el, v) {
+    v = Math.max(0, Math.min(1, +v || 0));
+    if (!el.firstElementChild) el.appendChild(document.createElement('i'));
+    el.style.setProperty('--v', v); el.setAttribute('role', 'progressbar'); el.setAttribute('aria-valuemin', 0); el.setAttribute('aria-valuemax', 100); el.setAttribute('aria-valuenow', Math.round(v * 100));
+  };
+  var CIRC = 2 * Math.PI * 42;
+  F.ring = function (el, v, label) {
+    v = Math.max(0, Math.min(1, +v || 0));
+    if (!$('svg', el)) el.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="42" fill="none" stroke-width="12"/><circle class="val" cx="50" cy="50" r="42" fill="none" stroke-width="12" stroke-dasharray="' + CIRC.toFixed(2) + '" stroke-dashoffset="' + CIRC.toFixed(2) + '"/></svg><div class="lbl"></div>');
+    $('.val', el).style.strokeDashoffset = (CIRC * (1 - v)).toFixed(2);
+    if (label != null) { var lb = $('.lbl', el); if (!lb.innerHTML) lb.innerHTML = label; else F.text(lb, label, true); }
+    el.setAttribute('role', 'img'); el.setAttribute('aria-label', Math.round(v * 100) + '%');
+  };
+
+  /* ---------- FILE DROP: .f-drop with a hidden file input; fires 'f:files' {files} ---------- */
+  F.drop = function (zone) {
+    if (zone.hasAttribute('data-f-w')) return; zone.setAttribute('data-f-w', '');
+    var input = $('input[type=file]', zone);
+    var send = function (files) { if (files && files.length) zone.dispatchEvent(new CustomEvent('f:files', { bubbles: true, detail: { files: files } })); };
+    zone.setAttribute('role', 'button'); if (!zone.hasAttribute('tabindex')) zone.tabIndex = 0;
+    zone.addEventListener('click', function () { if (input) input.click(); });
+    zone.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && input) { e.preventDefault(); input.click(); } });
+    if (input) input.addEventListener('change', function () { send(input.files); });
+    zone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      if (!zone.classList.contains('on')) { var r = zone.getBoundingClientRect(); F.ink(zone, true, e.clientX - r.left, e.clientY - r.top); }
+    });
+    zone.addEventListener('dragleave', function (e) { if (!zone.contains(e.relatedTarget)) F.ink(zone, false); });
+    zone.addEventListener('drop', function (e) { e.preventDefault(); F.ink(zone, false); send(e.dataTransfer && e.dataTransfer.files); });
+  };
+
+  /* ---------- CALENDAR: soft-square days that round into circles when chosen; fires 'f:change' {value: Date} ---------- */
+  var CHEV_L = '<svg class="f-i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.83 12l4.95 4.95-1.41 1.41L8 12l6.37-6.36 1.41 1.41L10.83 12z"/></svg>';
+  var CHEV_R = '<svg class="f-i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.17 12L8.22 7.05l1.41-1.41L16 12l-6.37 6.36-1.41-1.41L13.17 12z"/></svg>';
+  function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  F.calendar = function (el, opts) {
+    opts = opts || {};
+    var attr = el.getAttribute('data-value');
+    var value = opts.value ? new Date(opts.value) : attr ? new Date(attr + 'T00:00') : null;
+    var view = new Date((value || new Date()).getFullYear(), (value || new Date()).getMonth(), 1);
+    var today = new Date();
+    el.classList.add('f-cal');
+    function render(dir) {
+      var y = view.getFullYear(), m = view.getMonth();
+      var first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
+      var cells = [];
+      for (var i = 0; i < first; i++) cells.push(new Date(y, m, i - first + 1));
+      for (var d = 1; d <= days; d++) cells.push(new Date(y, m, d));
+      while (cells.length % 7) cells.push(new Date(y, m + 1, cells.length - first - days + 1));
+      el.innerHTML = '<div class="f-cal-head"><button type="button" class="f-icon-btn f-tap" data-step="-1" aria-label="Previous month">' + CHEV_L + '</button><span></span><button type="button" class="f-icon-btn f-tap" data-step="1" aria-label="Next month">' + CHEV_R + '</button></div><div class="f-cal-grid" role="grid"></div>';
+      $('.f-cal-head span', el).textContent = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(view);
+      var grid = $('.f-cal-grid', el);
+      ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(function (w) { var s = document.createElement('span'); s.className = 'dow'; s.textContent = w; s.setAttribute('aria-hidden', 'true'); grid.appendChild(s); });
+      cells.forEach(function (date) {
+        var b = document.createElement('button'); b.type = 'button';
+        b.className = 'f-choice f-ink f-tap' + (date.getMonth() !== m ? ' out' : '') + (sameDay(date, today) ? ' today' : '') + (sameDay(date, value) ? ' on' : '');
+        b.textContent = date.getDate(); b.setAttribute('aria-pressed', sameDay(date, value));
+        b.setAttribute('aria-label', new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(date));
+        b.addEventListener('click', function () {
+          if (date.getMonth() !== m) { value = date; view = new Date(date.getFullYear(), date.getMonth(), 1); render(); }
+          else { $$('.f-choice', grid).forEach(function (x) { if (x !== b) { F.drain(x); x.setAttribute('aria-pressed', 'false'); } }); F.ink(b, true); b.setAttribute('aria-pressed', 'true'); value = date; }
+          el.dispatchEvent(new CustomEvent('f:change', { bubbles: true, detail: { value: value } }));
+          if (opts.onChange) opts.onChange(value);
+        });
+        grid.appendChild(b);
+      });
+      $$('[data-step]', el).forEach(function (b) { b.addEventListener('click', function () { view = new Date(view.getFullYear(), view.getMonth() + (+b.getAttribute('data-step')), 1); render(+b.getAttribute('data-step')); $('[data-step="' + b.getAttribute('data-step') + '"]', el).focus({ preventScroll: true }); }); });
+      F.prime(el);
+      if (dir) anim(grid, [{ opacity: 0, transform: 'translateX(' + (dir * 10) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: T.plate, easing: EASE.plate });
+    }
+    render();
+    return { get value() { return value; }, set: function (d) { value = new Date(d); view = new Date(value.getFullYear(), value.getMonth(), 1); render(); } };
+  };
+
+  /* ---------- NUMBERS ---------- */
+  F.fmt = {
+    money: function (n, cur, loc) { return new Intl.NumberFormat(loc || 'en-US', { style: 'currency', currency: cur || 'USD' }).format(+n || 0); },
+    num: function (n, d, loc) { return new Intl.NumberFormat(loc || 'en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }).format(+n || 0); },
+    pct: function (n, d, loc) { return new Intl.NumberFormat(loc || 'en-US', { style: 'percent', minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }).format(+n || 0); },
+    compact: function (n, loc) { return new Intl.NumberFormat(loc || 'en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(+n || 0); },
+    date: function (d, o, loc) { return new Intl.DateTimeFormat(loc || 'en-US', o || { month: 'short', day: 'numeric' }).format(new Date(d)); }
+  };
+
+  /* ---------- VIEW MORPHS: elements sharing data-f-vt="name" morph between views (and pages) ---------- */
+  F.nameViews = function (scope) {
+    $$('[data-f-vt]', scope).forEach(function (el) { el.style.viewTransitionName = 'f-' + el.getAttribute('data-f-vt').replace(/[^a-zA-Z0-9_-]/g, '-'); });
+  };
+  /* Swap views in one step; named plates morph from their old place to their new one. Returns a Promise. */
+  F.view = function (mutate) {
+    if (!document.startViewTransition || reduce) { mutate(); F.nameViews(); return Promise.resolve(); }
+    var t = document.startViewTransition(function () { mutate(); F.nameViews(); });
+    return t.finished.catch(function () {});
+  };
+
+  /* ---------- FAVICON: the mark in the current accent ---------- */
+  F.favicon = function () {
+    var cs = getComputedStyle(root), a = cs.getPropertyValue('--accent').trim() || '#0e1015', o = cs.getPropertyValue('--on-accent').trim() || '#ffffff';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="' + a + '"/><rect x="19.5" y="19.5" width="25" height="25" rx="7" fill="' + o + '"/></svg>';
+    var link = $('link[rel="icon"]') || document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'icon' }));
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  };
+
+  /* ---------- INIT ---------- */
+  F.init = function () {
+    root.classList.add('f-boot');
+    document.body.classList.add('f-body');
+    if ($('.f-dock')) document.body.classList.add('f-has-dock');
+    if ($('[data-side]')) document.body.classList.add('f-has-inspector'); /* reserve the side panel's room from 1280px */
+    F.wire(document);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { root.classList.remove('f-boot'); }); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { root.classList.add('f-boot'); F.glideAll(); F.prime(); requestAnimationFrame(function () { root.classList.remove('f-boot'); }); });
+    addEventListener('resize', F.glideAll);
+  };
+
+  window.S4Flat = F;
+})();
+/* end S4 Flat */
+</script>
+<script>
+(function () {
+  'use strict';
+  var F = S4Flat;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  F.setAccent('#14b8a6');
+
+  var TOKEN_KEY = 'relaunch.token', CACHE_KEY = 'relaunch.cache';
+  function read(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function write(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } }
+
+  var S = {
+    token: read(TOKEN_KEY), apps: [], byId: {}, favIds: [], pc: 'offline', session: 'unknown', pcName: '',
+    online: navigator.onLine !== false, view: 'fav', busy: {}, current: null, liveOk: false
+  };
+  var tileEls = {}, slotEls = {}, tileKey = '', rowKey = '';
+  var PAST = { start: 'started', stop: 'stopped', restart: 'restarted' };
+  var ING = { start: 'Starting', stop: 'Stopping', restart: 'Restarting' };
+
+  /* ───────── API ───────── */
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ Authorization: 'Bearer ' + S.token }, opts.headers || {});
+    return fetch(path, opts).then(function (r) {
+      if (r.status === 401) { unpair(true); throw new Error('unauthorized'); }
+      return r;
+    });
+  }
+  function asJson(r) { return r.json(); }
+
+  function load() {
+    if (!S.token) return Promise.resolve();
+    return Promise.all([
+      api('/api/status').then(asJson),
+      api('/api/apps').then(asJson),
+      api('/api/apps?favorites=true').then(asJson)
+    ]).then(function (res) {
+      S.online = true;
+      S.pcName = res[0].pcName || S.pcName;
+      S.session = res[0].session;
+      S.pc = res[1].pc;
+      setApps(res[1].apps);
+      S.favIds = res[2].apps.map(function (a) { return a.id; });
+      saveCache();
+      render();
+      if (S.view === 'act') loadActivity();
+    }).catch(function (e) {
+      if (e.message === 'unauthorized') return;
+      S.online = false;
+      loadCache();
+      render();
+    });
+  }
+
+  function setApps(list) {
+    S.apps = list;
+    S.byId = {};
+    list.forEach(function (a) { S.byId[a.id] = a; });
+  }
+  function saveCache() {
+    write(CACHE_KEY, JSON.stringify({ apps: S.apps, favIds: S.favIds, pcName: S.pcName, session: S.session }));
+  }
+  function loadCache() {
+    var raw = read(CACHE_KEY);
+    if (!raw) return;
+    try {
+      var c = JSON.parse(raw);
+      setApps(c.apps || []);
+      S.favIds = c.favIds || [];
+      S.pcName = c.pcName || S.pcName;
+      S.session = c.session || S.session;
+      S.pc = 'offline';
+    } catch (e) { /* ignore a damaged cache */ }
+  }
+
+  /* ───────── helpers ───────── */
+  function canAct() { return S.online && S.pc === 'online' && (S.session === 'active' || S.session === 'locked'); }
+
+  function wordOf(a) {
+    if (a.phase === 'stopping') return 'Stopping';
+    if (a.phase === 'starting') return 'Starting';
+    if (S.busy[a.id]) return ING[S.busy[a.id]];
+    if (!a.trackable) return 'Ready';
+    return a.status.running ? 'Running' : 'Stopped';
+  }
+  function isBusy(a) { return a.phase === 'stopping' || a.phase === 'starting' || !!S.busy[a.id]; }
+  function pillClass(word) { return word === 'Running' ? 'ok' : (word === 'Stopped' || word === 'Ready') ? '' : 'info'; }
+
+  function fmtUp(sec) {
+    if (sec < 60) return 'Under a minute';
+    var m = Math.floor(sec / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+    if (d > 0) return d + 'd ' + (h % 24) + 'h';
+    if (h > 0) return h + 'h ' + (m % 60) + 'm';
+    return m + ' min';
+  }
+  function fmtMem(bytes) { return F.fmt.num(Math.round(bytes / 1048576)) + ' MB'; }
+  function subOf(a) {
+    if (!a.trackable) return 'Start only';
+    if (!a.status.running) return 'Not running';
+    return 'Up ' + fmtUp(a.status.uptimeSeconds).toLowerCase();
+  }
+  function initial(name) { return (name.match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase(); }
+  function setWord(el, text) { if (el.textContent !== text) F.text(el, text); }
+
+  /* ───────── icons ───────── */
+  var iconUrls = {}, iconQueue = [], iconActive = 0;
+  function loadIcon(app) {
+    var h = app.iconHash;
+    if (!h) return Promise.resolve(null);
+    if (iconUrls[h] !== undefined) return Promise.resolve(iconUrls[h]);
+    iconUrls[h] = new Promise(function (resolve) {
+      iconQueue.push(function (done) {
+        api('/api/apps/' + app.id + '/icon').then(function (r) { return r.ok ? r.blob() : null; })
+          .then(function (b) { var u = b ? URL.createObjectURL(b) : null; iconUrls[h] = u; resolve(u); done(); })
+          .catch(function () { delete iconUrls[h]; resolve(null); done(); });
+      });
+      pumpIcons();
+    });
+    return iconUrls[h];
+  }
+  function pumpIcons() {
+    while (iconActive < 4 && iconQueue.length) {
+      iconActive++;
+      iconQueue.shift()(function () { iconActive--; pumpIcons(); });
+    }
+  }
+  function paintIcon(el) {
+    var a = S.byId[el.getAttribute('data-id')];
+    if (!a) return;
+    if (!el.firstChild) el.textContent = initial(a.name);
+    if (!a.iconHash || el.getAttribute('data-hash') === a.iconHash) return;
+    el.setAttribute('data-hash', a.iconHash);
+    Promise.resolve(loadIcon(a)).then(function (url) {
+      if (!url || el.getAttribute('data-hash') !== a.iconHash) return;
+      var img = new Image();
+      img.alt = '';
+      img.src = url;
+      el.textContent = '';
+      el.appendChild(img);
+    });
+  }
+  function paintIcons() { $$('.app-ico[data-id]').forEach(paintIcon); }
+
+  /* ───────── rendering ───────── */
+  function render() {
+    renderStatus();
+    var paired = !!S.token, dock = $('.f-dock');
+    if (dock.hidden === paired) {
+      dock.hidden = !paired;
+      // The nav bead is measured while visible; re-glide once the dock appears.
+      if (paired) requestAnimationFrame(function () { F.glideAll(); });
+    }
+    if (!paired) return;
+    renderTiles();
+    renderRows();
+    if (S.current) fillCard(false);
+    paintIcons();
+  }
+
+  function renderStatus() {
+    var pill = $('#connPill'), banner = $('#banner'), text = '', word, cls, note = '';
+    if (!S.token) { pill.hidden = true; banner.hidden = true; return; }
+    pill.hidden = false;
+    if (!S.online) { word = 'No Network'; cls = 'bad'; note = 'No connection. Showing the last known apps.'; }
+    else if (S.pc !== 'online') { word = 'Offline'; cls = 'bad'; note = 'PC is offline. Wake it with your Wake-on-LAN app.'; }
+    else if (S.session === 'noSession') { word = 'No Session'; cls = 'warn'; note = 'Nobody is logged in on the PC, so apps can’t be started.'; }
+    else if (S.session === 'locked') { word = 'Locked'; cls = 'info'; }
+    else if (S.session === 'starting') { word = 'Starting'; cls = 'info'; note = 'The PC helper is starting up.'; }
+    else { word = 'Online'; cls = 'ok'; }
+    pill.className = 'f-pill ' + cls;
+    setWord(pill, word);
+    setWord($('#pcName'), S.pcName || 'reLAUNCH');
+    text = note;
+    if (text) { setWord($('#bannerText'), text); banner.hidden = false; } else banner.hidden = true;
+  }
+
+  function renderTiles() {
+    var box = $('#tiles'), ids = S.favIds.filter(function (id) { return S.byId[id]; });
+    var key = ids.join(',');
+    if (key !== tileKey) {
+      tileKey = key;
+      box.innerHTML = '';
+      tileEls = {};
+      ids.forEach(function (id) {
+        var a = S.byId[id], b = document.createElement('button');
+        b.className = 'f-tile f-tap';
+        b.setAttribute('data-id', id);
+        b.innerHTML = '<span class="app-ico" data-id="' + id + '"></span><span class="k"></span><span class="v"></span><span class="s"></span>';
+        $('.k', b).textContent = a.name;
+        b.addEventListener('click', function () { openCard(id, b, null); });
+        tileEls[id] = b;
+        box.appendChild(b);
+      });
+    }
+    ids.forEach(function (id) {
+      var a = S.byId[id], b = tileEls[id];
+      setWord($('.v', b), wordOf(a));
+      setWord($('.s', b), subOf(a));
+      b.classList.toggle('off', !canAct());
+      b.classList.toggle('busy', isBusy(a));
+    });
+    var empty = ids.length === 0;
+    $('#favEmpty').hidden = !empty;
+    $('#favEmptyText').textContent = S.apps.length ? 'Star apps in All Apps to pin them here.' : 'No apps yet. They appear once the PC has connected.';
+  }
+
+  function renderRows() {
+    var list = $('#rows'), key = S.apps.map(function (a) { return a.id; }).join(',');
+    if (key !== rowKey) {
+      rowKey = key;
+      list.innerHTML = '';
+      slotEls = {};
+      S.apps.forEach(function (a) { var slot = buildSlot(a); slotEls[a.id] = slot; list.appendChild(slot); });
+      applyFilter(false);
+    }
+    S.apps.forEach(function (a) {
+      var slot = slotEls[a.id];
+      if (!slot) return;
+      var word = wordOf(a), pill = $('.f-pill', slot), fav = S.favIds.indexOf(a.id) > -1, star = $('.star', slot);
+      pill.className = 'f-pill ' + pillClass(word);
+      setWord(pill, word);
+      setWord($('.m', slot), subOf(a));
+      $('.f-rowplate', slot).classList.toggle('off', !canAct());
+      if (star.classList.contains('on') !== fav) { star.classList.toggle('on', fav); F.inkCenter(star, fav); }
+      star.setAttribute('aria-pressed', fav);
+      $('use', star).setAttribute('href', fav ? '#ri-star-fill' : '#ri-star-line');
+    });
+  }
+
+  function buildSlot(a) {
+    var slot = document.createElement('div');
+    slot.className = 'f-slot';
+    slot.setAttribute('data-id', a.id);
+    slot.innerHTML =
+      '<div class="f-behind"><svg class="f-i sm"><use href="#ri-arrow-right-line"/></svg>Start</div>' +
+      '<div class="f-rowplate"><button class="f-row has-star f-tap"><span class="app-ico" data-id="' + a.id + '"></span>' +
+      '<span class="main"><span class="t"></span><span class="m"></span></span><span class="side"><span class="f-pill"></span></span></button>' +
+      '<button class="f-chip f-ink f-tap star" aria-label="Favorite" aria-pressed="false"><svg class="f-i sm"><use href="#ri-star-line"/></svg></button></div>';
+    $('.t', slot).textContent = a.name;
+    var plate = $('.f-rowplate', slot), row = $('.f-row', slot), star = $('.star', slot);
+    row.addEventListener('click', function () { openCard(a.id, row, plate); });
+    star.addEventListener('click', function () { toggleFavorite(a.id); });
+    F.swipe(slot, function () { act(a.id, 'start'); return 'stay'; }, function () {
+      var cur = S.byId[a.id];
+      return !!cur && canAct() && !isBusy(cur) && !(cur.trackable && cur.status.running);
+    });
+    return slot;
+  }
+
+  var query = '';
+  function applyFilter(animate) {
+    var slots = S.apps.map(function (a) { return slotEls[a.id]; }).filter(Boolean);
+    var vis = function (slot) {
+      var a = S.byId[slot.getAttribute('data-id')];
+      return !query || (a && a.name.toLowerCase().indexOf(query) > -1);
+    };
+    if (animate) F.reflow($('#rows'), slots, vis, 'fade');
+    else slots.forEach(function (s) { s.hidden = !vis(s); });
+    $('#rowsEmpty').hidden = slots.some(vis);
+  }
+  $('#q').addEventListener('input', function () { query = this.value.trim().toLowerCase(); applyFilter(true); });
+
+  /* ───────── activity ───────── */
+  var rtf = window.Intl && Intl.RelativeTimeFormat ? new Intl.RelativeTimeFormat('en', { numeric: 'auto' }) : null;
+  function ago(ts) {
+    var s = Math.round((ts - Date.now()) / 1000), a = Math.abs(s);
+    if (!rtf) return new Date(ts).toLocaleString();
+    if (a < 45) return 'Just now';
+    if (a < 3600) return rtf.format(Math.round(s / 60), 'minute');
+    if (a < 86400) return rtf.format(Math.round(s / 3600), 'hour');
+    return rtf.format(Math.round(s / 86400), 'day');
+  }
+  var RESULT_WORDS = { ok: 'Done', noSession: 'No Session', pcOffline: 'PC Offline', timeout: 'Timed Out', busy: 'Busy', startTimeout: 'Not Started', stopFailed: 'Not Stopped', elevationRequired: 'Needs Admin', unknownApp: 'Unknown App', tooManyActions: 'Too Fast' };
+  function loadActivity() {
+    if (!S.token) return Promise.resolve();
+    return api('/api/activity?limit=50').then(asJson).then(function (j) {
+      var box = $('#actRows');
+      box.innerHTML = '';
+      j.activity.forEach(function (r) {
+        var slot = document.createElement('div');
+        slot.className = 'f-slot';
+        slot.innerHTML = '<div class="f-rowplate"><div class="f-row"><span class="app-ico" data-id="' + r.appId + '"></span>' +
+          '<span class="main"><span class="t"></span><span class="m"></span></span><span class="side"><span class="f-pill"></span></span></div></div>';
+        $('.t', slot).textContent = r.appName + ' ' + (PAST[r.action] || r.action);
+        $('.m', slot).textContent = r.deviceName + ' · ' + ago(r.time);
+        var pill = $('.f-pill', slot);
+        pill.className = 'f-pill ' + (r.result === 'ok' ? 'ok' : 'bad');
+        pill.textContent = RESULT_WORDS[r.result] || r.result;
+        box.appendChild(slot);
+      });
+      $('#actEmpty').hidden = j.activity.length > 0;
+      paintIcons();
+    }).catch(function () { /* offline: keep what is shown */ });
+  }
+
+  /* ───────── card ───────── */
+  var card = $('#card');
+  function openCard(id, source, hide) {
+    S.current = id;
+    fillCard(true);
+    F.openPlate(card, source, { modal: true, hide: hide || undefined, onClose: function () { S.current = null; } });
+  }
+  function fillCard(first) {
+    var a = S.byId[S.current];
+    if (!a) { F.closePlate(card); return; }
+    var word = wordOf(a), busy = isBusy(a), run = a.trackable && a.status.running, act_ = canAct();
+    $('#cardTitle').textContent = a.name;
+    var ico = $('#cardIco');
+    ico.setAttribute('data-id', a.id);
+    if (first) { ico.removeAttribute('data-hash'); ico.textContent = ''; paintIcon(ico); }
+    if (first) { $('#cardBig').textContent = word; $('#cardEyebrow').textContent = 'Status'; } else setWord($('#cardBig'), word);
+    $('#cardLoad').hidden = !busy;
+    setWord($('#kvProcs'), String(run ? a.status.processCount : 0));
+    setWord($('#kvMem'), run ? fmtMem(a.status.workingSetBytes) : '0 MB');
+    setWord($('#kvUp'), run ? fmtUp(a.status.uptimeSeconds) : '—');
+    $('#bStart').disabled = busy || !act_ || run;
+    $('#bRestart').disabled = busy || !act_ || !run;
+    $('#bStop').disabled = busy || !act_ || !run;
+    var note = $('#cardNote');
+    var text = !act_ ? 'The PC is not reachable right now, so actions are paused.' : !a.trackable ? 'reLAUNCH can’t see this app’s processes, so it can only start it.' : '';
+    note.hidden = !text;
+    note.textContent = text;
+  }
+  $('#cardClose').addEventListener('click', function () { F.closePlate(card); });
+  $('#bStart').addEventListener('click', function () { act(S.current, 'start'); });
+  $('#bRestart').addEventListener('click', function () { act(S.current, 'restart'); });
+  $('#bStop').addEventListener('click', function () {
+    var a = S.byId[S.current];
+    confirmDialog('Stop ' + a.name + '?', 'It will close, and anything unsaved in it may be lost.', 'Stop', function () { act(a.id, 'stop'); });
+  });
+
+  /* ───────── actions ───────── */
+  function errorText(b, status) {
+    var code = b.errorCode || b.error;
+    var map = {
+      noSession: 'Nobody is logged in on the PC.',
+      pcOffline: 'The PC is offline. Wake it and try again.',
+      timeout: 'The PC didn’t answer in time. Check its status in a moment.',
+      busy: 'That app is still busy. Try again in a moment.',
+      tooManyActions: 'Too many actions. Wait a minute and try again.',
+      agentNotReady: 'The PC helper is still starting. Try again shortly.'
+    };
+    return map[code] || b.message || ('Something went wrong' + (status ? ' (' + status + ')' : '') + '.');
+  }
+  function act(id, kind) {
+    var a = S.byId[id];
+    if (!a || isBusy(a)) return Promise.resolve();
+    S.busy[id] = kind;
+    render();
+    return api('/api/apps/' + id + '/' + kind, { method: 'POST' })
+      .then(function (r) { return r.json().then(function (b) { return { status: r.status, body: b }; }); })
+      .then(function (res) {
+        if (res.body.ok) {
+          if (a.trackable) a.status = Object.assign({}, a.status, { running: kind !== 'stop' });
+          F.toast(a.name + ' ' + PAST[kind]);
+        } else F.toast(errorText(res.body, res.status));
+      })
+      .catch(function (e) { if (e.message !== 'unauthorized') F.toast('Couldn’t reach the relay. Check your connection.'); })
+      .then(function () { delete S.busy[id]; render(); });
+  }
+
+  function toggleFavorite(id) {
+    var before = S.favIds.slice(), on = before.indexOf(id) < 0;
+    S.favIds = on ? before.concat(id) : before.filter(function (x) { return x !== id; });
+    render();
+    api('/api/favorites', { method: 'PUT', body: JSON.stringify({ ids: S.favIds }), headers: { 'content-type': 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('failed'); saveCache(); F.toast(S.byId[id].name + (on ? ' added to Favorites' : ' removed from Favorites')); })
+      .catch(function (e) {
+        if (e.message === 'unauthorized') return;
+        S.favIds = before; render();
+        F.toast('Couldn’t change favorites. The PC may be offline.');
+      });
+  }
+
+  /* ───────── dialogs ───────── */
+  var dlg = $('#stopDlg'), dlgAction = null;
+  function confirmDialog(title, text, label, fn) {
+    $('#stopT').textContent = title;
+    $('#stopP').textContent = text;
+    $('#stopYes').textContent = label;
+    dlgAction = fn;
+    F.dialog(dlg, true);
+  }
+  $('#stopNo').addEventListener('click', function () { dlgAction = null; F.dialog(dlg, false); });
+  $('#stopYes').addEventListener('click', function () { var fn = dlgAction; dlgAction = null; F.dialog(dlg, false); if (fn) fn(); });
+
+  /* ───────── views ───────── */
+  function setView(name, instant) {
+    if (S.view === name && !instant) return;
+    var apply = function () {
+      S.view = name;
+      $$('[data-view]').forEach(function (s) { s.hidden = s.getAttribute('data-view') !== name; });
+    };
+    if (instant) apply(); else F.view(apply);
+    var btn = $('[data-f-nav][data-go="' + name + '"]');
+    if (btn && btn.getAttribute('aria-current') !== 'page') F.setNav($('#nav'), btn);
+    if (name === 'act') loadActivity();
+  }
+  $$('[data-f-nav]').forEach(function (b) { b.addEventListener('click', function () { setView(b.getAttribute('data-go')); }); });
+
+  /* ───────── menu ───────── */
+  $('#moreBtn').addEventListener('click', function () { F.menu(this, $('#menu')); });
+  $('#mTheme').addEventListener('click', function () { setTimeout(F.toggleTheme, 120); });
+  $('#mRefresh').addEventListener('click', function () { load().then(function () { F.toast('Refreshed'); }); });
+  $('#mForget').addEventListener('click', function () {
+    setTimeout(function () {
+      confirmDialog('Forget this phone?', 'You will need to scan a new pairing code to use reLAUNCH here again.', 'Forget', function () { unpair(false); });
+    }, 160);
+  });
+
+  /* ───────── pairing ───────── */
+  var sheet = $('#pairSheet');
+  function deviceName() {
+    var ua = navigator.userAgent || '', m;
+    if ((m = /Android[^;]*;\s*([^;)]+?)(?:\sBuild|\))/.exec(ua))) return m[1].trim().slice(0, 40);
+    if (/iPhone/.test(ua)) return 'iPhone';
+    if (/iPad/.test(ua)) return 'iPad';
+    return 'Phone';
+  }
+  function pairWith(code) {
+    return fetch('/api/pair', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code, name: deviceName() }) })
+      .then(function (r) { return r.json().then(function (b) { return { status: r.status, body: b }; }); });
+  }
+  function finishPairing(body) {
+    write(TOKEN_KEY, body.token);
+    S.token = body.token;
+    tileKey = ''; rowKey = '';
+    $('#vPair').hidden = true;
+    setView('fav', true);
+    render();
+    load().then(function () { F.toast('Phone paired'); });
+    connectLive();
+  }
+  $('#pairBtn').addEventListener('click', function () { F.openPlate(sheet, this, { focus: $('#code') }); });
+  $('#pairCancel').addEventListener('click', function () { F.closePlate(sheet); });
+  F.dragToClose(sheet, $('#pairGrab'));
+  sheet.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var code = $('#code').value.trim();
+    var field = $('#codeField');
+    if (!code) { field.classList.add('error'); $('#codeHelp').textContent = 'Type the code shown on the PC.'; return; }
+    pairWith(code).then(function (res) {
+      if (res.status === 200) { field.classList.remove('error'); F.closePlate(sheet).then(function () { finishPairing(res.body); }); return; }
+      field.classList.add('error');
+      $('#codeHelp').textContent = res.status === 429 ? 'Too many attempts. Wait a few minutes and try again.'
+        : res.status === 403 ? 'That code is wrong or has expired. Create a new one on the PC.' : 'Pairing failed. Check your connection and try again.';
+    }).catch(function () { field.classList.add('error'); $('#codeHelp').textContent = 'Couldn’t reach the relay. Check your connection.'; });
+  });
+
+  function unpair(revoked) {
+    write(TOKEN_KEY, null);
+    write(CACHE_KEY, null);
+    S.token = null; S.apps = []; S.byId = {}; S.favIds = []; S.pc = 'offline'; S.session = 'unknown';
+    tileKey = ''; rowKey = '';
+    if (live) { var w = live; live = null; w.close(); }
+    $('#tiles').innerHTML = ''; $('#rows').innerHTML = ''; $('#actRows').innerHTML = '';
+    if (F.isOpen(card)) F.closePlate(card);
+    setView('pair', true);
+    render();
+    if (revoked) F.toast('This phone was disconnected. Pair it again to continue.');
+  }
+
+  /* ───────── live socket ───────── */
+  var live = null, retry = 0, pingTimer = null;
+  function connectLive() {
+    if (!S.token || live) return;
+    var ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/api/live');
+    live = ws;
+    ws.onopen = function () { ws.send(JSON.stringify({ token: S.token })); };
+    ws.onmessage = function (e) {
+      if (e.data === 'pong') return;
+      var m;
+      try { m = JSON.parse(e.data); } catch (err) { return; }
+      onLive(m);
+    };
+    ws.onclose = function (e) {
+      if (live === ws) live = null;
+      S.liveOk = false;
+      clearInterval(pingTimer);
+      if (e.code === 4401) { if (S.token) unpair(true); return; }
+      if (!S.token) return;
+      retry = Math.min(retry + 1, 6);
+      setTimeout(connectLive, Math.min(30000, 500 * Math.pow(2, retry)));
+    };
+  }
+  function onLive(m) {
+    switch (m.type) {
+      case 'hello':
+        S.liveOk = true; retry = 0;
+        S.session = m.session; S.pc = m.pc; S.pcName = m.pcName || S.pcName;
+        clearInterval(pingTimer);
+        pingTimer = setInterval(function () { if (live && live.readyState === 1) live.send('ping'); }, 25000);
+        load();
+        break;
+      case 'pc':
+        S.pc = m.state; S.session = m.session || S.session; S.pcName = m.pcName || S.pcName;
+        render();
+        if (m.state === 'online') load();
+        break;
+      case 'session': S.session = m.state; render(); break;
+      case 'status': if (S.byId[m.appId]) { S.byId[m.appId].status = m.status; render(); } break;
+      case 'action':
+        if (S.byId[m.appId]) { S.byId[m.appId].phase = m.phase; render(); }
+        if (S.view === 'act' && (m.phase === 'running' || m.phase === 'stopped' || m.phase === 'failed')) loadActivity();
+        break;
+      case 'catalogue': case 'icons': load(); break;
+    }
+  }
+
+  window.addEventListener('online', function () { S.online = true; load(); connectLive(); });
+  window.addEventListener('offline', function () { S.online = false; render(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.token) { connectLive(); load(); } });
+  // Fallback when the live socket is down.
+  setInterval(function () { if (S.token && !S.liveOk && !document.hidden) load(); }, 20000);
+
+  /* ───────── boot ───────── */
+  function boot() {
+    var m = /[#&]pair=([A-Za-z0-9 -]+)/.exec(location.hash);
+    if (m) history.replaceState(null, '', location.pathname + location.search);
+    if (S.token) {
+      setView('fav', true);
+      loadCache();
+      render();
+      load();
+      connectLive();
+      return;
+    }
+    setView('pair', true);
+    render();
+    if (m) {
+      pairWith(m[1]).then(function (res) {
+        if (res.status === 200) finishPairing(res.body);
+        else { F.toast(res.status === 403 ? 'That pairing code is wrong or has expired.' : 'Pairing failed. Try again.'); }
+      }).catch(function () { F.toast('Couldn’t reach the relay. Check your connection.'); });
+    }
+  }
+
+  boot();
+  F.init();
+  F.favicon();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('/sw.js').catch(function () { /* optional */ });
+})();
+
+</script>

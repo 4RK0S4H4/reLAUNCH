@@ -1,0 +1,99 @@
+<title>reLAUNCH</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14b8a6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="reLAUNCH">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* S4FLAT:CSS */
+/* APP:CSS */
+</style>
+
+<!-- S4FLAT:ICONS -->
+<div class="f-wrap">
+  <header class="f-topbar">
+    <div class="f-brand"><span class="f-mark" id="brandMark" aria-hidden="true"></span><span id="pcName">reLAUNCH</span></div>
+    <span class="f-pill" id="connPill" role="status">Connecting</span>
+    <button class="f-icon-btn f-tap" id="moreBtn" aria-label="More" aria-haspopup="menu" aria-expanded="false" data-tip="More"><svg class="f-i"><use href="#ri-more-2-line"/></svg></button>
+  </header>
+
+  <div class="f-banner warn" id="banner" hidden><svg class="f-i sm"><use href="#ri-error-warning-line"/></svg><span id="bannerText"></span></div>
+
+  <section class="f-panel" id="vFav" data-view="fav">
+    <div class="f-panel-head"><div><h2 class="f-h2">Favorites</h2><p>Tap an app to start, restart or stop it.</p></div></div>
+    <div class="f-tiles" id="tiles"></div>
+    <div class="f-empty" id="favEmpty" hidden><span class="f-mark" aria-hidden="true"></span><span id="favEmptyText">Star apps in All Apps to pin them here.</span></div>
+  </section>
+
+  <section class="f-panel" id="vApps" data-view="apps" hidden>
+    <div class="f-panel-head"><div><h2 class="f-h2">All Apps</h2><p>Swipe a row right to start it. Star the ones you use most.</p></div></div>
+    <div class="f-field"><label for="q">Search</label><input id="q" type="search" placeholder="Search apps" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="f-list" id="rows"></div>
+    <div class="f-empty" id="rowsEmpty" hidden><span class="f-mark" aria-hidden="true"></span>No apps match.</div>
+  </section>
+
+  <section class="f-panel" id="vAct" data-view="act" hidden>
+    <div class="f-panel-head"><div><h2 class="f-h2">Activity</h2><p>The latest actions from every paired phone.</p></div></div>
+    <div class="f-list" id="actRows"></div>
+    <div class="f-empty" id="actEmpty" hidden><span class="f-mark" aria-hidden="true"></span>Nothing has happened yet.</div>
+  </section>
+
+  <section class="f-panel" id="vPair" data-view="pair" hidden>
+    <div class="f-empty"><span class="f-mark" aria-hidden="true"></span>This phone is not paired with a PC yet.</div>
+    <div class="f-btns"><button class="f-btn filled f-tap" id="pairBtn" data-f-ripple>Pair This Phone</button></div>
+  </section>
+</div>
+
+<div class="f-menu" id="menu" hidden>
+  <button class="f-menu-item f-tap" id="mTheme"><svg class="f-i"><use href="#ri-contrast-2-line"/></svg>Switch Theme</button>
+  <button class="f-menu-item f-tap" id="mRefresh"><svg class="f-i"><use href="#ri-refresh-line"/></svg>Refresh</button>
+  <div class="f-menu-sep" role="separator"></div>
+  <button class="f-menu-item f-tap danger" id="mForget"><svg class="f-i"><use href="#ri-logout-box-r-line"/></svg>Forget This Phone</button>
+</div>
+
+<form class="f-sheet" id="pairSheet" hidden aria-label="Pair this phone">
+  <div class="f-grab" id="pairGrab"><h3 class="f-h3">Pair This Phone</h3></div>
+  <p class="f-muted">On the PC, open reLAUNCH → Phones → Pair a phone and scan the QR code with this phone's camera. Or type the code shown under it.</p>
+  <div class="f-field" id="codeField"><label for="code">Pairing code</label><input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCDE FGHJK"><span class="help" id="codeHelp">Codes work once and expire after 5 minutes.</span></div>
+  <div class="f-btns"><button type="button" class="f-btn outline f-tap" id="pairCancel">Cancel</button><button type="submit" class="f-btn filled f-tap">Pair</button></div>
+</form>
+
+<div class="f-card" id="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle" hidden>
+  <div class="f-card-head"><div><div class="f-eyebrow" id="cardEyebrow">Status</div><h3 class="f-h2" id="cardTitle"></h3></div>
+    <button class="f-icon-btn f-tap f-close" id="cardClose" aria-label="Close"><svg class="f-i"><use href="#ri-close-line"/></svg></button></div>
+  <div class="card-hero"><span class="app-ico big" id="cardIco"></span><span class="f-big" id="cardBig"></span><span class="f-mark loading" id="cardLoad" aria-label="Working" hidden></span></div>
+  <div class="f-stack">
+    <div class="f-kv"><span>Processes</span><span class="f-num" id="kvProcs">0</span></div>
+    <div class="f-kv"><span>Memory</span><span class="f-num" id="kvMem">0 MB</span></div>
+    <div class="f-kv"><span>Running For</span><span class="f-num" id="kvUp">—</span></div>
+  </div>
+  <p class="f-note" id="cardNote" hidden></p>
+  <div class="f-btns">
+    <button class="f-btn filled f-tap" id="bStart" data-f-ripple>Start</button>
+    <button class="f-btn tonal f-tap" id="bRestart" data-f-ripple>Restart</button>
+    <button class="f-btn danger f-tap" id="bStop">Stop</button>
+  </div>
+</div>
+
+<div class="f-dialog f-arrive" id="stopDlg" role="dialog" aria-modal="true" aria-labelledby="stopT">
+  <h3 class="f-h2" id="stopT">Stop this app?</h3>
+  <p id="stopP">It will close, and anything unsaved in it may be lost.</p>
+  <div class="f-btns"><button class="f-btn outline f-tap" id="stopNo">Cancel</button><button class="f-btn danger-filled f-tap" id="stopYes">Stop</button></div>
+</div>
+
+<div class="f-dock">
+  <nav class="f-nav" aria-label="Main" id="nav">
+    <button class="f-tap" data-f-nav data-go="fav" aria-current="page" aria-label="Favorites" data-tip="Favorites"><span class="f-ico"><svg class="f-i ln"><use href="#ri-star-line"/></svg><svg class="f-i fl"><use href="#ri-star-fill"/></svg></span></button>
+    <button class="f-tap" data-f-nav data-go="apps" aria-label="All Apps" data-tip="All Apps"><span class="f-ico"><svg class="f-i ln"><use href="#ri-layout-grid-line"/></svg><svg class="f-i fl"><use href="#ri-layout-grid-fill"/></svg></span></button>
+    <button class="f-tap" data-f-nav data-go="act" aria-label="Activity" data-tip="Activity"><span class="f-ico"><svg class="f-i ln"><use href="#ri-file-list-3-line"/></svg><svg class="f-i fl"><use href="#ri-file-list-3-fill"/></svg></span></button>
+  </nav>
+</div>
+
+<!-- S4FLAT:JS -->
+<script>
+/* APP:JS */
+</script>

@@ -1,0 +1,490 @@
+/* S4 Flat v2.1 — Plate & Ink. Flat, monochrome by default, any accent. Circles, pills and rounded rectangles only. No shadows, no gradients, no blur. */
+
+/* ============ TOKENS ============ */
+:root {
+  --bg-base: #eef0f4;
+  --bg: color-mix(in srgb, var(--accent) var(--tint, 0%), var(--bg-base)); /* data-tint on <html> washes the ground with the accent */
+  --surface: #ffffff;
+  --surface-2: #e6e9ef;
+  --line: #d6dae2;
+  --line-strong: #767c89;
+  --fg: #0e1015;
+  --fg-2: #4d5361;
+  --fg-3: #5f6572;
+  /* Accent: ink by default. An app sets --accent (any colour) and --on-accent (black or white, whichever contrasts more; S4Flat.setAccent does this). */
+  --accent: var(--fg);
+  --on-accent: var(--bg);
+  --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  --accent-line: var(--accent-line-l, var(--accent)); /* thin strokes, rings, dots, meters: always 3:1 on surface-2 (setAccent computes it) */
+  --nav-fill: var(--bg);
+  --nav-ink: var(--fg);
+  --ok: #157a3c; --ok-bg: #dcf5e4;
+  --warn: #9a5a06; --warn-bg: #fdf0cc;
+  --bad: #c0282d; --bad-bg: #fde3e2; --on-bad: #ffffff;
+  --info: #1d4ed8; --info-bg: #dbe6fd;
+  --scrim: rgba(14, 16, 21, 0.28);
+  /* Charts: the accent leads, greys follow. Never more than one hue plus status colours. */
+  --chart-1: var(--accent-line); --chart-2: var(--fg-2); --chart-3: var(--line-strong); --chart-4: var(--line); --chart-grid: var(--surface-2);
+
+  --fs-display: clamp(32px, 6vw, 52px); --fs-title: 20px; --fs-body: 15px; --fs-small: 13px; --fs-micro: 12px;
+  --font: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Radius by role: the bigger the plate, the rounder. Actions are pills/circles. Choices are soft squares that round when chosen. */
+  --r-xs: 6px; --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 30px; --r-2xl: 36px; --r-full: 999px;
+
+  /* Motion: Ink (small controls fill), Glide (a highlight moves along a row), Plate (big things arrive, recede, morph). One curve family, no overshoot. */
+  --ease-ink: cubic-bezier(.2, .7, .2, 1);
+  --ease-plate: cubic-bezier(.16, 1, .3, 1);
+  --ease-exit: cubic-bezier(.4, 0, .9, .6);
+  --t-press: 120ms;
+  --t-ink: 220ms;
+  --t-glide: 240ms;
+  --t-plate: 300ms;
+  --t-morph: 340ms;
+  --t-recede: 320ms;
+  --t-exit: 180ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-base: #0b0c0f; --surface: #16181d; --surface-2: #22252c; --line: #2b2f37; --line-strong: #6f7584;
+    --fg: #f1f2f5; --fg-2: #a6abb7; --fg-3: #8b909c;
+    --ok: #5ad48a; --ok-bg: #11301e; --warn: #f5be4a; --warn-bg: #33270b; --bad: #f7807c; --bad-bg: #3a1616; --on-bad: #0b0c0f;
+    --info: #7aa7ff; --info-bg: #13244a;
+    --scrim: rgba(0, 0, 0, 0.5);
+    --accent-line: var(--accent-line-d, var(--accent));
+    color-scheme: dark;
+  }
+}
+[data-tint] { --tint: 5%; }
+@media (prefers-color-scheme: dark) { :root[data-tint]:not([data-theme="light"]) { --tint: 9%; } }
+:root[data-theme="dark"][data-tint] { --tint: 9%; }
+:root[data-theme="dark"] {
+  --bg-base: #0b0c0f; --surface: #16181d; --surface-2: #22252c; --line: #2b2f37; --line-strong: #6f7584;
+  --fg: #f1f2f5; --fg-2: #a6abb7; --fg-3: #8b909c;
+  --ok: #5ad48a; --ok-bg: #11301e; --warn: #f5be4a; --warn-bg: #33270b; --bad: #f7807c; --bad-bg: #3a1616; --on-bad: #0b0c0f;
+  --info: #7aa7ff; --info-bg: #13244a;
+  --scrim: rgba(0, 0, 0, 0.5);
+  --accent-line: var(--accent-line-d, var(--accent));
+  color-scheme: dark;
+}
+
+/* ============ BASE ============ */
+/* Resets use :where() so they carry no extra weight and never override a component's own background or padding. */
+:where(.f-body), :where(.f-body) * { box-sizing: border-box; }
+.f-body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 400 15px/1.5 var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 140px; /* room for the floating dock */
+}
+.f-body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+:where(.f-body) :where(button, input, select, textarea) { font: inherit; color: inherit; }
+:where(.f-body) :where(button) { border: 0; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:where(.f-body) :where(input, select, textarea) { -webkit-appearance: none; appearance: none; border-radius: 0; }
+:where(.f-body) :focus-visible { outline: 2px solid var(--accent-line); outline-offset: 3px; }
+/* Text inputs show focus with their own rounded inner ring, not a rectangle outline. */
+:where(.f-body) :where(input, select, textarea):focus-visible { outline: none; }
+.f-body [hidden] { display: none !important; }
+.f-num { font-variant-numeric: tabular-nums; }
+.f-i { width: 22px; height: 22px; fill: currentColor; flex: none; }
+.f-i.sm { width: 18px; height: 18px; }
+.f-ico { position: relative; width: 22px; height: 22px; flex: none; }
+.f-ico > * { position: absolute; inset: 0; transition: opacity var(--t-ink) var(--ease-ink); }
+.f-ico .fl, .on > .f-ico .ln, [aria-current="page"] > .f-ico .ln { opacity: 0; }
+.on > .f-ico .fl, [aria-current="page"] > .f-ico .fl { opacity: 1; }
+
+/* View transitions: named plates morph between views (and between pages, see @view-transition); the rest crossfades quickly. */
+@view-transition { navigation: auto; }
+::view-transition-group(*) { animation-duration: var(--t-morph); animation-timing-function: var(--ease-plate); }
+::view-transition-group(root) { animation-duration: 200ms; animation-timing-function: var(--ease-ink); }
+.f-vt *, .f-vt *::before, .f-vt *::after, .f-boot *, .f-boot *::before, .f-boot *::after { transition: none !important; }
+
+/* The page container. It eases back when a plate sits on top. */
+.f-wrap > *, .f-grid-2 > *, .f-tiles > * { min-width: 0; }
+.f-wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 20px; transform-origin: 50% var(--f-oy, 50vh); transition: transform var(--t-recede) var(--ease-plate); }
+.f-receded .f-wrap { transform: scale(.965); }
+.f-receded .f-wrap, .f-receding .f-wrap { will-change: transform; }
+
+/* ============ PRESS ============ */
+.f-tap {
+  position: relative; --press: .96;
+  transition: transform var(--t-press) var(--ease-ink), color var(--t-ink) var(--ease-ink), background-color var(--t-ink) var(--ease-ink), box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink);
+}
+.f-tap:active { transform: scale(var(--press)); }
+.f-tap::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0; pointer-events: none; transition: opacity var(--t-press) var(--ease-ink); }
+@media (hover: hover) { .f-tap:hover::after { opacity: .06; } }
+.f-tap:active::after { opacity: .1; }
+.f-tap[disabled], .f-tap[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+
+/* ============ INK: colour pours from the touch point and drains back to it ============ */
+.f-ink { position: relative; isolation: isolate; overflow: hidden; }
+.f-ink::before {
+  content: ""; position: absolute; z-index: -1; border-radius: 50%;
+  left: var(--x, 50%); top: var(--y, 50%);
+  width: var(--d, 300px); height: var(--d, 300px);
+  margin: calc(var(--d, 300px) / -2) 0 0 calc(var(--d, 300px) / -2);
+  background: var(--fill, var(--accent));
+  transform: scale(0);
+  transition: transform var(--t-exit) var(--ease-exit);
+}
+.f-ink.on::before { transform: scale(1); transition: transform var(--t-ink) var(--ease-ink); }
+.f-ink.on { transition-delay: 0s, 50ms, 0s, 0s, 0s; }
+
+/* ============ ARRIVE: small plates (dialog, toast) slide in from where they belong ============ */
+.f-arrive {
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transform: var(--base, none) translateY(var(--dist, 24px));
+  transition: opacity var(--t-exit) var(--ease-exit), transform var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit);
+}
+.f-arrive.open {
+  opacity: 1; visibility: visible; pointer-events: auto; transform: var(--base, none);
+  transition: opacity 120ms linear, transform var(--t-plate) var(--ease-plate), visibility 0s;
+}
+.f-scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); opacity: 0; visibility: hidden; transition: opacity var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit); }
+.f-scrim.open { opacity: 1; visibility: visible; transition: opacity var(--t-recede) var(--ease-plate), visibility 0s; }
+
+/* ============ TYPE + PANELS ============ */
+.f-h1 { margin: 0; font-size: clamp(32px, 6vw, 52px); line-height: 1.03; font-weight: 800; letter-spacing: -.035em; text-wrap: balance; }
+.f-h2 { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 700; letter-spacing: -.015em; text-wrap: balance; }
+.f-h3 { margin: 0; font-size: 17px; line-height: 1.3; font-weight: 700; letter-spacing: -.01em; }
+.f-eyebrow { font-size: 12px; font-weight: 600; color: var(--fg-3); letter-spacing: .04em; text-transform: uppercase; }
+.f-muted { color: var(--fg-2); }
+.f-note { margin: 0; color: var(--fg-2); font-size: 14px; }
+.f-panel { background: var(--surface); border-radius: var(--r-xl); padding: 24px; display: grid; gap: 18px; min-width: 0; }
+@media (max-width: 480px) { .f-panel { padding: 18px; } }
+.f-panel-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.f-panel-head p { margin: 2px 0 0; color: var(--fg-2); font-size: 14px; }
+.f-panel-head > :last-child:not(:first-child) { margin-left: auto; }
+.f-grid-2 { display: grid; grid-template-columns: 1.35fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .f-grid-2 { grid-template-columns: 1fr; } }
+.f-stack { display: grid; gap: 12px; min-width: 0; }
+.f-empty { background: var(--surface-2); border-radius: var(--r-lg); padding: 22px; text-align: center; color: var(--fg-2); font-size: 14px; display: grid; justify-items: center; gap: 8px; }
+.f-empty .f-mark { --s: 44px; background: var(--surface); }
+.f-empty .f-mark::after { background: var(--line-strong); }
+
+/* ============ TOP BAR (floating pill) ============ */
+.f-topbar {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); z-index: 20; margin-top: 12px;
+  display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: var(--r-full); padding: 8px 8px 8px 10px;
+}
+.f-brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; font-weight: 700; font-size: 16px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; transition: opacity var(--t-ink) var(--ease-ink); }
+/* The mark: a soft square inside a circle. Logo, favicon, empty states and the loader all use it. */
+.f-mark, .f-logo { --s: 36px; width: var(--s); height: var(--s); border-radius: 50%; background: var(--accent); display: inline-grid; place-items: center; flex: none; }
+.f-mark::after, .f-logo::after { content: ""; width: 39%; height: 39%; border-radius: 28%; background: var(--on-accent); }
+.f-mark.loading::after { animation: f-mark 1.1s var(--ease-plate) infinite; }
+@keyframes f-mark { 0% { transform: rotate(0); border-radius: 28%; } 50% { transform: rotate(45deg); border-radius: 50%; } 100% { transform: rotate(90deg); border-radius: 28%; } }
+.f-icon-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--fg); flex: none; }
+.f-icon-btn.on { background: var(--fg); color: var(--bg); }
+.f-avatar { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-2); font-weight: 700; font-size: 13px; flex: none; }
+.f-avatar.round { border-radius: 50%; background: var(--fg); color: var(--bg); }
+.f-search { position: absolute; left: 8px; top: 8px; bottom: 8px; width: min(440px, calc(100% - 164px)); display: flex; align-items: center; border-radius: var(--r-full); background: var(--surface-2); padding: 0 16px; opacity: 0; visibility: hidden; transform: translateX(-10px); transition: opacity var(--t-exit) var(--ease-exit), transform var(--t-exit) var(--ease-exit), visibility 0s linear var(--t-exit); }
+.f-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: 0; font-size: 15px; }
+.f-search:focus-within { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-search input::-webkit-search-decoration, .f-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.f-searching .f-search { opacity: 1; visibility: visible; transform: none; transition: opacity 120ms linear, transform var(--t-plate) var(--ease-plate), visibility 0s; }
+.f-searching .f-brand { opacity: 0; transition: opacity var(--t-exit) var(--ease-exit); }
+
+/* ============ ACTIONS (pills) ============ */
+.f-btn { position: relative; height: 46px; padding: 0 22px; border-radius: var(--r-full); font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; overflow: hidden; isolation: isolate; white-space: nowrap; }
+.f-btn.filled { background: var(--accent); color: var(--on-accent); }
+.f-btn.tonal { background: var(--accent-soft); color: var(--fg); }
+.f-btn.outline { box-shadow: inset 0 0 0 2px var(--line); color: var(--fg); }
+.f-btn.text { color: var(--fg); padding: 0 14px; }
+.f-btn.danger { background: var(--bad-bg); color: var(--bad); }
+.f-btn.danger-filled { background: var(--bad); color: var(--on-bad); }
+.f-btn.sm { height: 38px; padding: 0 16px; font-size: 14px; }
+.f-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.f-ripple { position: absolute; border-radius: 50%; background: currentColor; pointer-events: none; z-index: -1; }
+/* A button that confirms in place: same size, green pours in, label swaps. */
+.f-confirm { --fill: var(--ok); }
+.f-confirm.on { color: var(--surface); }
+.f-confirm .lbl { display: inline-flex; align-items: center; gap: 6px; }
+.f-confirm .a, .f-confirm .b { display: inline-flex; align-items: center; gap: 6px; transition: opacity var(--t-ink) var(--ease-ink), transform var(--t-ink) var(--ease-ink); }
+.f-confirm .b { position: absolute; opacity: 0; transform: translateY(8px); }
+.f-confirm.on .a { opacity: 0; transform: translateY(-8px); transition-duration: var(--t-exit); }
+.f-confirm.on .b { opacity: 1; transform: none; transition-delay: 60ms; }
+
+/* ============ CHOICES (ink + shape as state: soft square → circle/pill) ============ */
+.f-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-chip { --h: 38px; height: var(--h); padding: 0 16px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 14px; font-weight: 600; color: var(--fg-2); --fill: var(--fg); display: inline-flex; align-items: center; gap: 8px; }
+.f-chip.on { color: var(--bg); border-radius: calc(var(--h) / 2); }
+.f-count { font-size: 12px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-xs); background: color-mix(in srgb, currentColor 12%, transparent); display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+
+.f-check { position: relative; width: 26px; height: 26px; border-radius: 8px; flex: none; box-shadow: inset 0 0 0 2px var(--line-strong); display: grid; place-items: center; color: var(--on-accent); --fill: var(--accent); transition: box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink); }
+.f-check.on { box-shadow: inset 0 0 0 2px transparent; border-radius: 50%; }
+.f-check svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.f-check path { stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset var(--t-exit) var(--ease-exit); }
+.f-check.on path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t-ink) var(--ease-ink) 80ms; }
+.f-pick { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; --press: .88; }
+.f-pick.f-tap::after { inset: 9px; }
+
+.f-toggle { position: relative; width: 56px; height: 34px; border-radius: var(--r-full); background: var(--surface-2); flex: none; --fill: var(--accent); --press: .94; box-shadow: inset 0 0 0 2px var(--line); }
+.f-toggle.on { box-shadow: inset 0 0 0 2px transparent; }
+/* Moving parts are always round: the knob is a circle that grows and shows a check when on, and stretches as it travels (runtime). */
+.f-toggle > i { position: absolute; z-index: 1; top: 4px; left: 4px; width: 26px; height: 26px; transform: scale(.7); transition: transform var(--t-glide) var(--ease-plate); }
+.f-toggle > i > b { position: absolute; inset: 0; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; transition: background-color var(--t-ink) var(--ease-ink); }
+.f-toggle.on > i { transform: translateX(22px); }
+.f-toggle.on > i > b { background: var(--on-accent); }
+.f-toggle > i svg { width: 16px; height: 16px; fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.f-toggle > i path { stroke-dasharray: 20; stroke-dashoffset: 20; transition: stroke-dashoffset var(--t-exit) var(--ease-exit); }
+.f-toggle.on > i path { stroke-dashoffset: 0; transition: stroke-dashoffset var(--t-ink) var(--ease-ink) 90ms; }
+.f-setting { display: flex; align-items: center; gap: 14px; justify-content: space-between; padding: 4px 0; }
+.f-setting small { display: block; color: var(--fg-2); font-size: 13px; }
+
+.f-radios { display: flex; gap: 8px; flex-wrap: wrap; }
+.f-radio { --h: 46px; display: inline-flex; align-items: center; gap: 10px; height: var(--h); padding: 0 18px 0 12px; border-radius: 14px; background: var(--surface-2); font-weight: 600; font-size: 14px; --fill: var(--accent-soft); }
+.f-radio.on { border-radius: calc(var(--h) / 2); }
+.f-radio > i { width: 22px; height: 22px; border-radius: 7px; box-shadow: inset 0 0 0 2px var(--line-strong); display: grid; place-items: center; transition: box-shadow var(--t-ink) var(--ease-ink), border-radius var(--t-ink) var(--ease-ink); }
+.f-radio > i::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-line); transform: scale(0); transition: transform var(--t-exit) var(--ease-exit); }
+.f-radio.on > i { box-shadow: inset 0 0 0 2px var(--accent-line); border-radius: 50%; }
+.f-radio.on > i::after { transform: scale(1); transition: transform var(--t-ink) var(--ease-ink) 40ms; }
+
+/* A square choice that becomes a circle: dates, sizes, quick picks. */
+.f-choice { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--fg); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; --fill: var(--accent); --press: .9; }
+.f-choice.on { color: var(--on-accent); border-radius: 50%; }
+.f-choice.today { box-shadow: inset 0 0 0 2px var(--line-strong); }
+.f-choice.today.on { box-shadow: inset 0 0 0 2px transparent; }
+.f-choices { display: flex; gap: 6px; flex-wrap: wrap; }
+.f-choices label { display: grid; justify-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--fg-3); }
+
+/* ============ GLIDE: segmented ============ */
+.f-seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border-radius: var(--r-full); padding: 4px; }
+.f-seg > .f-bead { position: absolute; top: 4px; left: 4px; height: calc(100% - 8px); border-radius: var(--r-full); background: var(--accent); transition: transform var(--t-glide) var(--ease-plate); }
+.f-seg > button { position: relative; z-index: 1; height: 36px; padding: 0 16px; border-radius: var(--r-full); font-size: 14px; font-weight: 600; color: var(--fg-2); transition: color var(--t-ink) var(--ease-ink); }
+.f-seg > button[aria-pressed="true"] { color: var(--on-accent); transition-delay: 60ms; }
+
+/* ============ STATUS ============ */
+.f-pill { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: var(--r-full); font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--surface); color: var(--fg-2); transition: background-color var(--t-ink) var(--ease-ink), color var(--t-ink) var(--ease-ink); }
+.f-pill.ok { background: var(--ok-bg); color: var(--ok); }
+.f-pill.warn { background: var(--warn-bg); color: var(--warn); }
+.f-pill.bad { background: var(--bad-bg); color: var(--bad); }
+.f-pill.info { background: var(--info-bg); color: var(--info); }
+.f-banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md); font-size: 14px; }
+.f-banner.ok { background: var(--ok-bg); color: var(--ok); } .f-banner.warn { background: var(--warn-bg); color: var(--warn); }
+.f-banner.bad { background: var(--bad-bg); color: var(--bad); } .f-banner.info { background: var(--info-bg); color: var(--info); }
+
+/* ============ TILES (plates that open) ============ */
+.f-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.f-tile { text-align: left; background: var(--surface-2); border-radius: var(--r-lg); padding: 18px; display: grid; gap: 6px; --press: .98; min-width: 0; }
+.f-tile .k { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--fg-2); }
+.f-tile .v { font-size: 28px; font-weight: 800; letter-spacing: -.025em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.f-tile .s { font-size: 13px; color: var(--fg-2); }
+.f-bars { display: flex; align-items: flex-end; gap: 5px; height: 40px; margin-top: 8px; }
+.f-bars i { flex: 1; height: 100%; border-radius: 3px; background: var(--fg); opacity: .16; transform-origin: bottom; }
+.f-bars i:last-child { opacity: 1; background: var(--chart-1); }
+
+/* ============ ROWS (plates you can open, select and swipe) ============ */
+.f-list { display: grid; gap: 8px; }
+.f-slot { position: relative; border-radius: var(--r-lg); }
+.f-behind { position: absolute; inset: 0; border-radius: inherit; background: var(--surface-2); color: var(--fg-2); display: flex; align-items: center; gap: 8px; padding: 0 20px; font-weight: 700; font-size: 14px; transition: background-color var(--t-ink) var(--ease-ink), color var(--t-ink) var(--ease-ink); }
+.f-behind.armed { background: var(--ok); color: var(--surface); }
+.f-rowplate { position: relative; z-index: 1; border-radius: inherit; }
+.f-row { position: relative; display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; background: var(--surface-2); border-radius: var(--r-lg); padding: 12px 16px 12px 12px; --press: .985; touch-action: pan-y; }
+.f-row.sel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-row.f-active { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-row.has-pick { padding-left: 52px; }
+.f-rowplate > .f-pick { position: absolute; z-index: 2; left: 3px; top: calc(50% - 22px); }
+.f-rowplate.locked > .f-pick { visibility: hidden; }
+.f-row .main { flex: 1; min-width: 0; }
+.f-row .t { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-row .m { display: block; font-size: 13px; color: var(--fg-2); }
+.f-row .side { display: grid; justify-items: end; gap: 4px; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .f-row .f-avatar { display: none; } }
+
+/* ============ FIELDS ============ */
+.f-field { display: grid; gap: 6px; }
+.f-field label { font-size: 13px; font-weight: 600; color: var(--fg-2); }
+.f-field input, .f-field select, .f-field textarea { appearance: none; -webkit-appearance: none; height: 48px; border: 0; border-radius: var(--r-md); background: var(--surface-2); padding: 0 16px; outline: 0; transition: box-shadow var(--t-ink) var(--ease-ink); width: 100%; min-width: 0; }
+.f-field textarea { height: auto; min-height: 96px; padding: 12px 16px; resize: vertical; }
+.f-field input:focus, .f-field select:focus, .f-field textarea:focus { box-shadow: inset 0 0 0 2px var(--accent-line); }
+.f-field.error input, .f-field.error select { box-shadow: inset 0 0 0 2px var(--bad); }
+.f-field .help { font-size: 12px; color: var(--fg-3); }
+.f-field.error .help { color: var(--bad); }
+.f-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f-range { -webkit-appearance: none; appearance: none; width: 100%; height: 32px; background: transparent; margin: 0; --p: 50%; }
+.f-range::-webkit-slider-runnable-track { height: 10px; border-radius: var(--r-full); background: linear-gradient(to right, var(--accent-line) var(--p), var(--surface-2) var(--p)); }
+.f-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--surface); transition: transform var(--t-press) var(--ease-ink); }
+.f-range:active::-webkit-slider-thumb { transform: scale(1.12); }
+.f-range::-moz-range-track { height: 10px; border-radius: var(--r-full); background: var(--surface-2); }
+.f-range::-moz-range-progress { height: 10px; border-radius: var(--r-full); background: var(--accent-line); }
+.f-range::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--surface); }
+
+/* ============ DOCK (floating nav pill + circle; a left rail on wide screens) ============ */
+.f-dock { position: fixed; z-index: 42; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 8px; }
+.f-modal .f-dock, .f-layered .f-dock { z-index: 30; } /* under the scrim whenever a plate is open */
+.f-nav { position: relative; display: flex; gap: 4px; padding: 6px; background: var(--fg); border-radius: var(--r-full); }
+.f-nav > .f-bead { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--nav-fill); transition: transform var(--t-glide) var(--ease-plate); }
+.f-nav > a, .f-nav > button { position: relative; z-index: 1; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; color: color-mix(in srgb, var(--bg) 66%, var(--fg)); --press: .9; }
+.f-nav > [aria-current="page"] { color: var(--nav-ink); transition-delay: 0s, 60ms, 0s, 0s, 0s; }
+.f-fab { width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; flex: none; --press: .92; }
+@media (min-width: 1100px) {
+  .f-body.f-has-dock { padding-left: max(112px, env(safe-area-inset-left, 0px)); padding-block: 0 48px; }
+  .f-dock { left: max(24px, calc(env(safe-area-inset-left, 0px) + 16px)); top: 50%; bottom: auto; transform: translateY(-50%); flex-direction: column-reverse; gap: 10px; }
+  .f-nav { flex-direction: column; }
+}
+
+/* ============ PLATES THAT SIT ON TOP ============ */
+/* Sheet: grows out of the circle that opened it; can be dragged down by .f-grab. */
+.f-sheet { align-content: start; position: fixed; z-index: 45; left: 50%; margin-left: calc(min(420px, 100vw - 32px) / -2); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: var(--surface); border-radius: var(--r-2xl); padding: 10px 24px 24px; display: grid; gap: 14px; }
+@media (min-width: 1100px) { .f-sheet { left: 104px; margin-left: 0; bottom: auto; top: var(--f-sheet-top, 24px); } }
+.f-grab { display: grid; gap: 10px; padding-top: 2px; cursor: grab; touch-action: none; user-select: none; }
+.f-grab::before { content: ""; justify-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--line); }
+/* Card: the tile or row you tapped becomes this. */
+.f-card { position: fixed; z-index: 46; top: max(84px, 10vh); left: max(16px, calc(50% - 280px)); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: var(--surface); border-radius: var(--r-xl); padding: 24px; display: grid; gap: 16px; align-content: start; }
+.f-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.f-big { font-size: clamp(30px, 8vw, 40px); font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.f-kv { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: 12px 14px; font-size: 14px; }
+.f-kv > :first-child { color: var(--fg-2); } .f-kv > :last-child { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.f-meter { height: 8px; border-radius: 4px; background: var(--surface); overflow: hidden; grid-column: 1 / -1; }
+.f-meter > i { display: block; height: 100%; border-radius: 4px; background: var(--accent-line); transform-origin: left; }
+/* Dialog: arrives a short way up over a scrim. */
+.f-dialog { position: fixed; z-index: 46; left: 50%; top: 50%; --base: translate(-50%, -50%); --dist: 28px; width: min(400px, calc(100vw - 32px)); background: var(--surface); border-radius: var(--r-2xl); padding: 26px; display: grid; gap: 12px; }
+.f-dialog p { margin: 0; color: var(--fg-2); }
+.f-dialog .f-btns, .f-sheet .f-btns, .f-card .f-btns { justify-content: flex-end; }
+/* Selection bar: grows out of the check you ticked. */
+.f-selbar { position: fixed; z-index: 41; left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: calc(100vw - 32px); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 12px; background: var(--accent); color: var(--on-accent); border-radius: var(--r-full); padding: 6px 6px 6px 20px; white-space: nowrap; }
+.f-selbar button { height: 40px; padding: 0 18px; border-radius: var(--r-full); background: var(--on-accent); color: var(--accent); font-weight: 700; font-size: 14px; }
+@media (min-width: 1100px) { .f-selbar { bottom: 24px; } }
+/* Toast: drops from the top bar. */
+.f-toast { position: fixed; z-index: 50; left: 0; right: 0; margin: 0 auto; width: fit-content; --dist: -16px; top: calc(env(safe-area-inset-top, 0px) + 78px); background: var(--fg); color: var(--bg); border-radius: var(--r-full); padding: 6px 6px 6px 8px; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; max-width: calc(100vw - 32px); }
+.f-toast .tc { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: var(--bg); display: grid; place-items: center; flex: none; }
+.f-toast .msg { padding-right: 10px; }
+.f-toast button { height: 34px; padding: 0 14px; border-radius: var(--r-full); background: color-mix(in srgb, var(--bg) 16%, var(--fg)); color: var(--bg); font-weight: 700; font-size: 13px; }
+
+/* ============ TOUCH: comfortable targets on coarse pointers ============ */
+@media (pointer: coarse) {
+  /* Press feedback waits a beat so starting a scroll doesn't flicker the rows under your thumb. */
+  .f-tap:active { transition-delay: 70ms, 0s, 0s, 0s, 0s; }
+  .f-tap:active::after { transition-delay: 70ms; }
+  .f-chip { --h: 44px; }
+  .f-seg > button { height: 40px; }
+  .f-btn.sm { height: 44px; }
+  .f-icon-btn { width: 44px; height: 44px; }
+  .f-setting { min-height: 52px; }
+}
+.f-setting { cursor: pointer; }
+
+/* ============ TABS: a bead glides between labels (no track) ============ */
+.f-seg.tabs { background: transparent; padding: 0; gap: 4px; grid-auto-columns: auto; }
+.f-seg.tabs > .f-bead { top: 0; left: 0; height: 100%; background: var(--surface-2); transition: transform var(--t-glide) var(--ease-plate), width var(--t-glide) var(--ease-plate); }
+.f-seg.tabs > button[aria-pressed="true"] { color: var(--fg); }
+
+/* ============ LEDGER TABLE ============ */
+.f-table-wrap { overflow-x: auto; margin: -6px -4px; padding: 0 4px; -webkit-overflow-scrolling: touch; }
+.f-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.f-table th { position: sticky; top: 0; z-index: 2; text-align: left; font-size: 12px; font-weight: 600; color: var(--fg-2); background: var(--surface-2); padding: 10px 14px; white-space: nowrap; }
+.f-table th:first-child { border-radius: var(--r-full) 0 0 var(--r-full); }
+.f-table th:last-child { border-radius: 0 var(--r-full) var(--r-full) 0; }
+.f-table td { background: var(--surface-2); padding: 12px 14px; white-space: nowrap; transition: background-color var(--t-ink) var(--ease-ink), box-shadow var(--t-ink) var(--ease-ink); }
+.f-table td:first-child { border-radius: var(--r-md) 0 0 var(--r-md); }
+.f-table td:last-child { border-radius: 0 var(--r-md) var(--r-md) 0; }
+.f-table td:first-child, .f-table th:first-child { position: sticky; left: 0; z-index: 1; }
+.f-table th:first-child { z-index: 3; }
+@media (max-width: 599px) { .f-hide-sm { display: none !important; } .f-dialog { --dist: 16px; } .f-toast { --dist: -10px; } }
+.f-table .num { text-align: right; }
+.f-table .wide { white-space: normal; min-width: 160px; }
+/* The .grow column takes the spare width and truncates, so numbers stay on screen on phones. */
+.f-table .grow { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 599px) { .f-table th, .f-table td { padding-left: 10px; padding-right: 10px; } .f-table td.pick { padding: 0 0 0 2px; } }
+.f-table td.pick { width: 44px; padding: 0 0 0 4px; }
+.f-table tbody tr.f-active td { box-shadow: inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.f-active td:first-child { box-shadow: inset 2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.f-active td:last-child { box-shadow: inset -2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td { background: var(--accent-soft); box-shadow: inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+.f-table tbody tr.sel td:last-child { box-shadow: inset -2px 0 0 var(--accent-line), inset 0 2px 0 var(--accent-line), inset 0 -2px 0 var(--accent-line); }
+@media (hover: hover) { .f-table tbody tr:not(.sel):hover td { background: color-mix(in srgb, var(--fg) 5%, var(--surface-2)); } }
+.f-table tfoot td { background: var(--fg); color: var(--bg); font-weight: 700; }
+.f-table tfoot td:first-child { border-radius: var(--r-full) 0 0 var(--r-full); }
+.f-table tfoot td:last-child { border-radius: 0 var(--r-full) var(--r-full) 0; }
+.f-sort { display: inline-flex; align-items: center; gap: 4px; font: inherit; color: inherit; border-radius: var(--r-full); }
+th.num .f-sort { flex-direction: row-reverse; }
+.f-sort svg { width: 14px; height: 14px; fill: currentColor; opacity: .35; transition: transform var(--t-glide) var(--ease-plate), opacity var(--t-ink) var(--ease-ink); }
+th[aria-sort] .f-sort svg { opacity: 1; }
+th[aria-sort="descending"] .f-sort svg { transform: rotate(180deg); }
+
+/* ============ SIDE PANEL: on wide screens a card docks beside the list instead of covering it ============ */
+@media (min-width: 1280px) {
+  .f-card.is-side { top: 24px; bottom: 24px; left: auto; right: max(24px, env(safe-area-inset-right, 0px)); width: 420px; max-height: none; border-radius: var(--r-xl); }
+}
+@media (min-width: 1280px) {
+  .f-has-inspector .f-wrap { margin-right: 444px; }
+}
+
+/* ============ MENU: grows out of the button that opened it ============ */
+.f-menu { position: fixed; z-index: 47; min-width: 210px; max-width: calc(100vw - 32px); background: var(--surface); border-radius: var(--r-lg); padding: 6px; box-shadow: inset 0 0 0 1px var(--line); display: grid; gap: 2px; }
+.f-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 44px; padding: 0 12px; border-radius: var(--r-md); font-weight: 500; text-align: left; --press: .98; }
+.f-menu-item.danger { color: var(--bad); }
+.f-menu-sep { height: 1px; margin: 4px 10px; background: var(--line); }
+
+/* ============ TOOLTIP ============ */
+.f-tip { position: fixed; z-index: 60; pointer-events: none; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: var(--r-full); white-space: nowrap; opacity: 0; transform: translateY(4px); transition: opacity 120ms linear, transform var(--t-glide) var(--ease-plate); }
+.f-tip.show { opacity: 1; transform: none; }
+
+/* ============ PROGRESS ============ */
+.f-progress { height: 10px; border-radius: var(--r-full); background: var(--surface-2); overflow: hidden; }
+.f-progress > i { display: block; height: 100%; border-radius: inherit; background: var(--accent-line); transform: translateX(calc((var(--v, 0) - 1) * 100%)); transition: transform var(--t-plate) var(--ease-plate); }
+.f-ring { position: relative; width: var(--s, 112px); height: var(--s, 112px); flex: none; }
+.f-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.f-ring .trk { stroke: var(--surface-2); }
+.f-ring .val { stroke: var(--accent-line); stroke-linecap: round; transition: stroke-dashoffset var(--t-plate) var(--ease-plate); }
+.f-ring .lbl { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; font-weight: 800; font-size: 24px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.f-ring .lbl small { font-size: 12px; font-weight: 600; color: var(--fg-2); letter-spacing: 0; }
+
+/* ============ LOADING: flat placeholders that softly pulse (no shimmer, no gradient) ============ */
+.f-skel { display: block; background: var(--surface-2); border-radius: var(--r-sm); animation: f-pulse 1.1s var(--ease-ink) infinite alternate; }
+.f-skel.line { height: 12px; }
+.f-skel.title { height: 20px; width: 45%; }
+.f-skel.circle { border-radius: 50%; }
+.f-skel.plate { height: 68px; border-radius: var(--r-lg); }
+@keyframes f-pulse { from { opacity: 1; } to { opacity: .45; } }
+
+/* ============ FILE DROP: ink pours from where the file is held ============ */
+.f-drop { display: grid; justify-items: center; gap: 6px; padding: 28px 20px; border-radius: var(--r-lg); background: var(--surface-2); text-align: center; color: var(--fg-2); font-size: 14px; cursor: pointer; --fill: var(--accent-soft); --press: .99; }
+.f-drop b { color: var(--fg); }
+.f-drop.on { color: var(--fg); }
+.f-drop input { display: none; }
+
+/* ============ CALENDAR ============ */
+.f-cal { display: grid; gap: 10px; width: 100%; max-width: 340px; }
+.f-cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 700; }
+.f-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; justify-items: center; }
+.f-cal-grid .dow { font-size: 12px; color: var(--fg-3); font-weight: 600; padding: 4px 0; }
+.f-cal-grid .f-choice { width: 40px; height: 40px; border-radius: 12px; background: transparent; }
+.f-cal-grid .f-choice.out { color: var(--fg-3); }
+.f-cal-grid .f-choice.on { border-radius: 50%; }
+
+/* ============ COMPACT DENSITY (data-density="compact" on <html>) ============ */
+[data-density="compact"] .f-wrap, [data-density="compact"] .f-grid-2 { gap: 14px; }
+[data-density="compact"] .f-panel { padding: 18px; gap: 14px; border-radius: var(--r-lg); }
+[data-density="compact"] .f-tiles { gap: 8px; }
+[data-density="compact"] .f-tile { padding: 14px; border-radius: var(--r-md); }
+[data-density="compact"] .f-tile .v { font-size: 24px; }
+[data-density="compact"] .f-list { gap: 6px; }
+[data-density="compact"] .f-slot, [data-density="compact"] .f-row { border-radius: var(--r-md); }
+[data-density="compact"] .f-row { padding: 8px 12px 8px 10px; gap: 12px; font-size: 14px; }
+[data-density="compact"] .f-row.has-pick { padding-left: 44px; }
+[data-density="compact"] .f-rowplate > .f-pick { left: -1px; }
+[data-density="compact"] .f-row .m { font-size: 12px; }
+[data-density="compact"] .f-row .f-avatar { width: 32px; height: 32px; border-radius: 10px; font-size: 12px; }
+[data-density="compact"] .f-check { width: 22px; height: 22px; border-radius: 7px; }
+[data-density="compact"] .f-check.on { border-radius: 50%; }
+[data-density="compact"] .f-chip { --h: 32px; padding: 0 12px; font-size: 13px; }
+[data-density="compact"] .f-btn { height: 38px; padding: 0 16px; font-size: 14px; }
+[data-density="compact"] .f-radio { --h: 38px; }
+[data-density="compact"] .f-seg > button { height: 30px; padding: 0 12px; font-size: 13px; }
+[data-density="compact"] .f-choice { width: 38px; height: 38px; border-radius: 12px; font-size: 14px; }
+[data-density="compact"] .f-choice.on { border-radius: 50%; }
+[data-density="compact"] .f-field input, [data-density="compact"] .f-field select { height: 40px; border-radius: var(--r-sm); }
+[data-density="compact"] .f-sheet, [data-density="compact"] .f-dialog { border-radius: var(--r-xl); }
+[data-density="compact"] .f-card { border-radius: var(--r-lg); }
+[data-density="compact"] .f-table { border-spacing: 0 4px; font-size: 13px; }
+[data-density="compact"] .f-table td { padding: 8px 12px; }
+[data-density="compact"] .f-table th { padding: 8px 12px; }
+[data-density="compact"] .f-menu-item { height: 38px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; transition-delay: 0s !important; animation-duration: 1ms !important; }
+  .f-receded .f-wrap { transform: none; }
+}
+/* end S4 Flat */
