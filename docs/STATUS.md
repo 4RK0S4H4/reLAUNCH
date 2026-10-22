@@ -18,7 +18,7 @@ Success: Windows job (build, 21 unit tests, smoke test, relay end-to-end, WiX bu
 
 ## Open problems / not verifiable here
 
-- The WinUI app was verified to start and load all pages in CI, but nobody has looked at it on screen (no screenshots of it were possible). Layout polish may be needed after you see it.
+- The WinUI app loads all pages in CI and screenshots of it (captured on the runner) are in `docs/screenshots/windows-app-*.png`; the real PC may look slightly different (Mica backdrop, your theme).
 - Cloudflare deploy is untested against a real account (needs your secrets). The Worker runs locally under `wrangler dev` and in vitest.
 - Cloudflare Access on the `workers.dev` hostname (optional extra layer in the plan) was not evaluated; not documented.
 - The solution file is `reLAUNCH.slnx` (the .NET 10 SDK default format), not `.sln`.

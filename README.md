@@ -10,6 +10,8 @@ Made for moments like this: Infuse on the TV can't reach the Jellyfin server →
 
 _(Phone screenshots use example apps and a simulated PC.)_
 
+Desktop app (captured from the CI runner): ![Apps](docs/screenshots/windows-app-apps.png) ![Phones](docs/screenshots/windows-app-phones.png)
+
 ## How it works
 
 ```
